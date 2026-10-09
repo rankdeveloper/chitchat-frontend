@@ -4,21 +4,31 @@ import type { ChatMessage, UiPhase } from '../types'
 type Props = {
   phase: UiPhase
   partnerLabel: string | null
+  partnerPublicId: string | null
+  partnerTyping: boolean
+  friendRequestSent: boolean
   messages: ChatMessage[]
   onSend: (text: string) => void
+  onTyping: () => void
   onNext: () => void
   onCancel: () => void
-  onAddFriend: () => void
+  onSendFriendRequest: () => void
+  onBlock: () => void
+  onReport: () => void
 }
+
+const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥']
 
 export function ChatSession(p: Props) {
   const [draft, setDraft] = useState('')
+  const [hoveredMsg, setHoveredMsg] = useState<number | null>(null)
+  const [showReport, setShowReport] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const searching = p.phase === 'searching'
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [p.messages])
+  }, [p.messages, p.partnerTyping])
 
   const send = () => {
     const text = draft.trim()
@@ -30,14 +40,45 @@ export function ChatSession(p: Props) {
   return (
     <section className="session">
       <header className="main-top">
-        <h1>
-          {searching ? 'Finding a stranger…' : `@${p.partnerLabel ?? 'stranger'}`}
-        </h1>
+        <div className="session-partner-info">
+          <h1>
+            {searching ? 'Finding a stranger…' : `@${p.partnerLabel ?? 'stranger'}`}
+          </h1>
+        </div>
         {p.phase === 'chatting' && (
           <div className="session-actions">
-            <button type="button" className="ghost-btn" onClick={p.onAddFriend}>
-              Add friend
-            </button>
+            {!p.friendRequestSent ? (
+              <button type="button" className="ghost-btn" onClick={p.onSendFriendRequest}>
+                Add friend
+              </button>
+            ) : (
+              <span className="req-sent-badge">Request sent ✓</span>
+            )}
+            <div className="session-more">
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => setShowReport((v) => !v)}
+              >
+                ⋯
+              </button>
+              {showReport && (
+                <div className="more-menu">
+                  <button
+                    type="button"
+                    onClick={() => { p.onBlock(); setShowReport(false) }}
+                  >
+                    🚫 Block
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { p.onReport(); setShowReport(false) }}
+                  >
+                    ⚑ Report
+                  </button>
+                </div>
+              )}
+            </div>
             <button type="button" className="skip-btn" onClick={p.onNext}>
               Next
             </button>
@@ -61,10 +102,26 @@ export function ChatSession(p: Props) {
           <div
             key={`${row.ts}-${i}`}
             className={`bubble ${row.fromSelf ? 'me' : 'them'}`}
+            onMouseEnter={() => setHoveredMsg(i)}
+            onMouseLeave={() => setHoveredMsg(null)}
           >
             {row.text}
+            {hoveredMsg === i && !row.fromSelf && (
+              <div className="reaction-bar">
+                {REACTIONS.map((emoji) => (
+                  <button key={emoji} type="button" className="reaction-btn" title={emoji}>
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
+        {p.partnerTyping && (
+          <div className="typing-indicator them">
+            <span /><span /><span />
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -86,7 +143,10 @@ export function ChatSession(p: Props) {
         </button>
         <input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            p.onTyping()
+          }}
           placeholder="Send a message."
           disabled={p.phase !== 'chatting'}
           onKeyDown={(e) => {

@@ -8,6 +8,7 @@ import type {
   ChatMessage,
   FriendRow,
   NavTab,
+  PendingRequest,
   ProfileSnapshot,
   SavedProfile,
   SocketRef,
@@ -38,15 +39,24 @@ export function useChitchat({
   const [nav, setNav] = useState<NavTab>('chat')
 
   const [partnerLabel, setPartnerLabel] = useState<string | null>(null)
+  const [partnerPublicId, setPartnerPublicId] = useState<string | null>(null)
+  const [partnerTyping, setPartnerTyping] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [friendRequestSent, setFriendRequestSent] = useState(false)
 
   const [friends, setFriends] = useState<FriendRow[]>([])
+  const [onlineFriends, setOnlineFriends] = useState<Set<string>>(new Set())
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([])
   const [activeDmId, setActiveDmId] = useState<string | null>(null)
   const [dmChatId, setDmChatId] = useState<string | null>(null)
   const [dmMessages, setDmMessages] = useState<ChatLine[]>([])
+  const [dmTyping, setDmTyping] = useState<string | null>(null)
 
   const activeDmRef = useRef<string | null>(null)
   activeDmRef.current = activeDmId
+
+  const typingTimerRef = useRef<number | undefined>(undefined)
+  const dmTypingTimerRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     const socket = io({
@@ -58,6 +68,9 @@ export function useChitchat({
 
     const resetSession = () => {
       setPartnerLabel(null)
+      setPartnerPublicId(null)
+      setPartnerTyping(false)
+      setFriendRequestSent(false)
       setMessages([])
     }
     const backToSearching = () => {
@@ -120,6 +133,8 @@ export function useChitchat({
       (payload: { partnerPublicId: string; partnerDisplayName: string }) => {
         setPhase('chatting')
         setPartnerLabel(payload.partnerDisplayName ?? 'Stranger')
+        setPartnerPublicId(payload.partnerPublicId)
+        setFriendRequestSent(false)
         setMessages([])
       },
     )
@@ -138,6 +153,79 @@ export function useChitchat({
       },
     )
 
+    socket.on('partner_typing', () => setPartnerTyping(true))
+    socket.on('partner_stop_typing', () => setPartnerTyping(false))
+
+    socket.on('dm_partner_typing', (body: { fromPublicId: string }) => {
+      if (body.fromPublicId !== activeDmRef.current) return
+      setDmTyping(body.fromPublicId)
+      window.clearTimeout(dmTypingTimerRef.current)
+      dmTypingTimerRef.current = window.setTimeout(() => setDmTyping(null), 3000)
+    })
+    socket.on('dm_partner_stop_typing', (body: { fromPublicId: string }) => {
+      if (body.fromPublicId !== activeDmRef.current) return
+      setDmTyping(null)
+    })
+
+    socket.on('dm_read_receipt', (body: { messageId: string; readBy: string; readAt: number }) => {
+      setDmMessages((m) =>
+        m.map((msg) =>
+          msg.id === body.messageId ? { ...msg, readAt: body.readAt } : msg,
+        ),
+      )
+    })
+
+    socket.on(
+      'message_reacted',
+      (body: { messageId: string; emoji: string; users: string[] }) => {
+        setDmMessages((m) =>
+          m.map((msg) => {
+            if (msg.id !== body.messageId) return msg
+            const reactions = { ...(msg.reactions ?? {}) }
+            if (body.users.length === 0) delete reactions[body.emoji]
+            else reactions[body.emoji] = body.users
+            return { ...msg, reactions }
+          }),
+        )
+      },
+    )
+
+    socket.on('friend_request_sent', () => {
+      setFriendRequestSent(true)
+      showToast('Friend request sent!')
+    })
+    socket.on('friend_request_received', (payload: { fromPublicId: string; fromDisplayName: string }) => {
+      showToast(`${payload.fromDisplayName} sent you a friend request!`)
+      setPendingRequests((prev) => {
+        if (prev.some((r) => r.fromPublicId === payload.fromPublicId)) return prev
+        return [...prev, { fromPublicId: payload.fromPublicId, fromDisplayName: payload.fromDisplayName }]
+      })
+    })
+    socket.on('friend_request_declined', () => showToast('Friend request declined.'))
+
+    socket.on('user_blocked', (payload: { targetPublicId: string }) => {
+      showToast('User blocked.')
+      setFriends((prev) => prev.filter((f) => f.publicId !== payload.targetPublicId))
+    })
+    socket.on('user_reported', () => showToast('User reported. Thank you.'))
+
+    socket.on('friends_online', (ids: string[]) => {
+      setOnlineFriends(new Set(ids))
+    })
+    socket.on('friend_online', (payload: { publicId: string }) => {
+      setOnlineFriends((prev) => new Set([...prev, payload.publicId]))
+    })
+    socket.on('friend_offline', (payload: { publicId: string }) => {
+      setOnlineFriends((prev) => {
+        const next = new Set(prev)
+        next.delete(payload.publicId)
+        return next
+      })
+    })
+    socket.on('pending_requests', (list: PendingRequest[]) => {
+      setPendingRequests(list)
+    })
+
     socket.on('partner_next', () => {
       showToast('Your chat partner has skipped this chat.')
       backToSearching()
@@ -154,7 +242,8 @@ export function useChitchat({
     socket.on('dm_list', applyFriends)
 
     socket.on('friend_added', () => {
-      showToast('Added to friends — open Direct Messages.')
+      showToast('Friend added!')
+      setFriendRequestSent(false)
       socket.emit('list_friends')
     })
 
@@ -266,13 +355,34 @@ export function useChitchat({
   const cancelSearch = () => emit('cancel_search')
   const nextChat = () => emit('next')
   const addFriend = () => emitWithToast('add_friend', {})
+  const sendFriendRequest = () => {
+    if (friendRequestSent) return
+    emitWithToast('send_friend_request', {})
+  }
+  const acceptFriendRequest = (fromPublicId: string) =>
+    emitWithToast('accept_friend_request', { fromPublicId })
+  const declineFriendRequest = (fromPublicId: string) =>
+    emitWithToast('decline_friend_request', { fromPublicId })
   const removeFriend = (friendPublicId: string) =>
     emitWithToast('remove_friend', { friendPublicId })
+  const blockUser = (targetPublicId: string) =>
+    emitWithToast('block_user', { targetPublicId })
+  const reportUser = (targetPublicId: string, reason?: string) =>
+    emitWithToast('report_user', { targetPublicId, reason })
 
   const sendMessage = (text: string) => {
     if (!socketRef.current) return
     setMessages((m) => [...m, { fromSelf: true, text, ts: Date.now() }])
     emitWithToast('chat_message', { text })
+    window.clearTimeout(typingTimerRef.current)
+    emit('stop_typing')
+  }
+
+  let typingDebounce: number | undefined
+  const sendTyping = () => {
+    emit('typing')
+    window.clearTimeout(typingDebounce)
+    typingDebounce = window.setTimeout(() => emit('stop_typing'), 2000)
   }
 
   const openDm = (friend: FriendRow) => {
@@ -286,6 +396,28 @@ export function useChitchat({
   const sendDm = (text: string) => {
     if (!activeDmId) return
     emitWithToast('dm_send', { friendPublicId: activeDmId, text })
+    emit('dm_stop_typing', { friendPublicId: activeDmId })
+  }
+
+  let dmTypingDebounce: number | undefined
+  const sendDmTyping = () => {
+    if (!activeDmId) return
+    emit('dm_typing', { friendPublicId: activeDmId })
+    window.clearTimeout(dmTypingDebounce)
+    dmTypingDebounce = window.setTimeout(
+      () => emit('dm_stop_typing', { friendPublicId: activeDmId }),
+      2000,
+    )
+  }
+
+  const markDmRead = (messageId: string) => {
+    if (!activeDmId) return
+    emit('dm_read', { friendPublicId: activeDmId, messageId })
+  }
+
+  const reactToMessage = (messageId: string, emoji: string) => {
+    if (!activeDmId) return
+    emit('react_message', { messageId, emoji, friendPublicId: activeDmId })
   }
 
   const openFriendsTab = () => {
@@ -304,19 +436,34 @@ export function useChitchat({
     connectionError,
     nav,
     partnerLabel,
+    partnerPublicId,
+    partnerTyping,
+    friendRequestSent,
     messages,
     friends,
+    onlineFriends,
+    pendingRequests,
     activeDmId,
     dmChatId,
     dmMessages,
+    dmTyping,
     startChat,
     cancelSearch,
     nextChat,
     addFriend,
+    sendFriendRequest,
+    acceptFriendRequest,
+    declineFriendRequest,
     removeFriend,
+    blockUser,
+    reportUser,
     sendMessage,
+    sendTyping,
     openDm,
     sendDm,
+    sendDmTyping,
+    markDmRead,
+    reactToMessage,
     openFriendsTab,
     goNewChat,
   }

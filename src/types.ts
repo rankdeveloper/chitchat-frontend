@@ -7,6 +7,7 @@ export type FriendRow = {
   lastText?: string
   lastMessageAt?: number
   avatarHue?: number
+  online?: boolean
 }
 
 export type ChatLine = {
@@ -15,9 +16,16 @@ export type ChatLine = {
   fromDisplayName?: string
   text: string
   ts: number
+  reactions?: Record<string, string[]>
+  readAt?: number | null
 }
 
 export type ChatMessage = { fromSelf: boolean; text: string; ts: number }
+
+export type PendingRequest = {
+  fromPublicId: string
+  fromDisplayName: string
+}
 
 export type UiPhase =
   | 'disconnected'

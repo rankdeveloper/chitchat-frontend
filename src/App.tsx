@@ -62,14 +62,20 @@ export default function App() {
       return (
         <DmSession
           key={activeFriend.publicId}
-          friend={activeFriend}
+          friend={{ ...activeFriend, online: chat.onlineFriends.has(activeFriend.publicId) }}
           chatId={chat.dmChatId}
           messages={chat.dmMessages}
           userId={userId}
           displayName={profile.displayName}
           avatarHue={profile.avatarHue}
+          isTyping={chat.dmTyping === activeFriend.publicId}
           onSend={chat.sendDm}
+          onTyping={() => chat.sendDmTyping()}
+          onMarkRead={chat.markDmRead}
+          onReact={chat.reactToMessage}
           onUnfriend={() => chat.removeFriend(activeFriend.publicId)}
+          onBlock={() => chat.blockUser(activeFriend.publicId)}
+          onReport={() => chat.reportUser(activeFriend.publicId)}
         />
       )
     }
@@ -78,20 +84,29 @@ export default function App() {
         <ChatSession
           phase={chat.phase}
           partnerLabel={chat.partnerLabel}
+          partnerPublicId={chat.partnerPublicId}
+          partnerTyping={chat.partnerTyping}
+          friendRequestSent={chat.friendRequestSent}
           messages={chat.messages}
           onSend={chat.sendMessage}
+          onTyping={chat.sendTyping}
           onNext={chat.nextChat}
           onCancel={chat.cancelSearch}
-          onAddFriend={chat.addFriend}
+          onSendFriendRequest={chat.sendFriendRequest}
+          onBlock={() => chat.partnerPublicId && chat.blockUser(chat.partnerPublicId)}
+          onReport={() => chat.partnerPublicId && chat.reportUser(chat.partnerPublicId)}
         />
       )
     }
     if (chat.nav === 'friends') {
       return (
         <FriendsPanel
-          friends={chat.friends}
+          friends={chat.friends.map((f) => ({ ...f, online: chat.onlineFriends.has(f.publicId) }))}
+          pendingRequests={chat.pendingRequests}
           onOpen={chat.openDm}
           onRemove={chat.removeFriend}
+          onAccept={chat.acceptFriendRequest}
+          onDecline={chat.declineFriendRequest}
         />
       )
     }

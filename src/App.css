@@ -1912,3 +1912,241 @@
   padding: 14px 16px;
   font: inherit;
 }
+
+/* ==========================================================================
+   Typing indicator
+   ========================================================================== */
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: #1c1c22;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: fit-content;
+  align-self: flex-start;
+}
+
+.typing-indicator.them {
+  align-self: flex-start;
+}
+
+.typing-indicator span {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: bounce 1.2s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+/* ==========================================================================
+   Read receipts
+   ========================================================================== */
+
+.read-receipt {
+  font-size: 0.72rem;
+  color: var(--purple-2);
+  margin-left: 4px;
+}
+
+/* ==========================================================================
+   Message reactions
+   ========================================================================== */
+
+.reaction-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.reaction-btn {
+  border: 1px solid var(--border);
+  background: #1a1a20;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.reaction-btn:hover {
+  background: rgba(123, 92, 255, 0.2);
+  border-color: rgba(167, 139, 250, 0.5);
+}
+
+.msg-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.msg-reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--border);
+  background: #1a1a20;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.msg-reaction.mine {
+  background: rgba(123, 92, 255, 0.2);
+  border-color: rgba(167, 139, 250, 0.5);
+}
+
+/* ==========================================================================
+   Online / offline status
+   ========================================================================== */
+
+.online-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.online-badge.online { color: var(--green); }
+.online-badge.offline { color: var(--muted); }
+
+.avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.presence-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--card);
+}
+
+.presence-dot.online { background: var(--green); }
+.presence-dot.offline { background: var(--muted); }
+
+/* ==========================================================================
+   Pending friend requests
+   ========================================================================== */
+
+.pending-section {
+  margin-top: 8px;
+}
+
+.pending-heading {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--purple-2);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pending-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.accept-btn {
+  border-radius: 10px;
+  border: 1px solid rgba(61, 214, 140, 0.4);
+  background: rgba(61, 214, 140, 0.12);
+  color: var(--green);
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.accept-btn:hover {
+  background: rgba(61, 214, 140, 0.22);
+}
+
+/* ==========================================================================
+   Block / report more menu
+   ========================================================================== */
+
+.session-more {
+  position: relative;
+}
+
+.more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.more-menu button {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.more-menu button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-h);
+}
+
+/* ==========================================================================
+   Friend request sent badge
+   ========================================================================== */
+
+.req-sent-badge {
+  font-size: 0.82rem;
+  color: var(--green);
+  padding: 8px 12px;
+  border: 1px solid rgba(61, 214, 140, 0.3);
+  border-radius: 10px;
+  background: rgba(61, 214, 140, 0.08);
+}
+
+/* ==========================================================================
+   DM top left with avatar + online
+   ========================================================================== */
+
+.dm-top-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dm-top-left h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text-h);
+}
+
+.session-partner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
