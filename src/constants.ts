@@ -1,9 +1,31 @@
 export const INTEREST_OPTIONS = [
-  'JavaScript',
-  'Football',
-  'Gaming',
-  'Anime',
-  'Music',
+  'Gaming', 'Anime', 'Music', 'Movies', 'Sports',
+  'Football', 'Basketball', 'Travel', 'Cooking', 'Art',
+  'Photography', 'Reading', 'Fitness', 'Technology', 'JavaScript',
+  'Python', 'Fashion', 'Dance', 'Memes', 'Crypto',
+] as const
+
+export const COUNTRY_OPTIONS = [
+  { code: 'any', name: 'Any Country' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'IN', name: 'India' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'PH', name: 'Philippines' },
+  { code: 'NG', name: 'Nigeria' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'PK', name: 'Pakistan' },
+  { code: 'ID', name: 'Indonesia' },
+  { code: 'TR', name: 'Turkey' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'ES', name: 'Spain' },
 ] as const
 
 export const AVATAR_HUES = [45, 280, 200, 340, 140, 20]

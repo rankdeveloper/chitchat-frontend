@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SETTINGS_TABS } from '../constants'
+import { COUNTRY_OPTIONS, SETTINGS_TABS } from '../constants'
 import type { BannerStyle, SettingsTab } from '../types'
 import { Avatar } from './Avatar'
 import { InterestChips } from './InterestChips'
@@ -8,6 +8,8 @@ type Props = {
   displayName: string
   avatarHue: number
   bannerStyle: BannerStyle
+  gender: string
+  country: string
   interests: string[]
   interestsOn: boolean
   nameChangesLeft: number
@@ -16,8 +18,9 @@ type Props = {
   onResetAvatar: () => void
   onBanner: (style: BannerStyle) => void
   onToggleInterest: (tag: string) => void
-  /** Returns true when the name editor should close. */
   onCommitName: (name: string) => boolean
+  onGenderChange: (value: string) => void
+  onCountryChange: (value: string) => void
 }
 
 export function SettingsModal(p: Props) {
@@ -25,7 +28,6 @@ export function SettingsModal(p: Props) {
   const [editing, setEditing] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const name = p.displayName.trim() || 'Guest'
-
   return (
     <div className="modal-backdrop" onClick={p.onClose}>
       <section
@@ -133,6 +135,36 @@ export function SettingsModal(p: Props) {
                   <p className="muted tiny">
                     You have {p.nameChangesLeft} name changes left for today.
                   </p>
+                </div>
+
+                <div className="settings-row">
+                  <span className="settings-label">Gender</span>
+                  <div className="seg-control">
+                    {(['male', 'unspecified', 'female'] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        className={`seg-btn ${p.gender === g ? 'active' : ''}`}
+                        onClick={() => p.onGenderChange(g)}
+                      >
+                        {g === 'unspecified' ? 'Other' : g.charAt(0).toUpperCase() + g.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="settings-row">
+                  <span className="settings-label">Country</span>
+                  <div className="select-wrap">
+                    <select
+                      value={p.country || 'any'}
+                      onChange={(e) => p.onCountryChange(e.target.value === 'any' ? '' : e.target.value)}
+                    >
+                      {COUNTRY_OPTIONS.map((c) => (
+                        <option key={c.code} value={c.code}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="settings-row">

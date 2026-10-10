@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { GENDER_FILTERS } from "../constants";
-import { InterestChips } from "./InterestChips";
+import { COUNTRY_OPTIONS, INTEREST_OPTIONS } from "../constants";
 
 type Props = {
   interests: string[];
@@ -19,164 +18,134 @@ type Props = {
 };
 
 export function NewChat(p: Props) {
-  const [manage, setManage] = useState(false);
+  const [interestSearch, setInterestSearch] = useState("");
+
+  const filtered = interestSearch.trim()
+    ? INTEREST_OPTIONS.filter((t) =>
+        t.toLowerCase().includes(interestSearch.toLowerCase()),
+      )
+    : INTEREST_OPTIONS;
 
   return (
-    <section className="new-chat">
-      <header className="main-top">
-        <h1>New Chat</h1>
-      </header>
+    <section className="new-chat-screen">
+      <div className="brand-hero">
+        <div className="brand-badge" aria-hidden="true">
+          <span className="brand-eye" />
+        </div>
+        <h1>Chitchat</h1>
+        <p className="brand-tagline">Talk to strangers, make friends.</p>
+      </div>
 
-      <div className="pref-card">
-        <div className="interests-head">
-          <div className="interests-title">
-            <span>Your Interests</span>
-            <span className={`on-badge ${p.interestsOn ? "on" : "off"}`}>
-              ({p.interestsOn ? "ON" : "OFF"})
-            </span>
-          </div>
-          <div className="interests-tools">
+      <div className="prompt-card">
+        <div className="nc-section">
+          <div className="nc-section-head">
+            <span className="nc-label">Interests</span>
             <button
               type="button"
-              className={`toggle ${p.interestsOn ? "on" : ""}`}
-              aria-pressed={p.interestsOn}
+              className={`toggle-switch ${p.interestsOn ? "on" : ""}`}
+              aria-label="Toggle interests matching"
               onClick={p.onToggleInterestsOn}
               disabled={p.busy}
             >
               <span className="toggle-knob" />
             </button>
-            <button
-              type="button"
-              className="linkish"
-              onClick={() => setManage((v) => !v)}
-              disabled={p.busy}
-            >
-              Manage
-            </button>
           </div>
-        </div>
-
-        <div
-          className={`interests-box ${manage ? "open" : ""}`}
-          role="button"
-          tabIndex={0}
-          onClick={() => !p.busy && setManage(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              if (!p.busy) setManage(true);
-            }
-          }}
-        >
-          {p.interests.length === 0 ? (
-            <p className="empty-interests">
-              You have no interests. Click to add some.
-            </p>
-          ) : (
-            <div className="interest-chips">
-              {p.interests.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  className="interest-chip selected"
-                  disabled={p.busy}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    p.onToggleInterest(tag);
-                  }}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {manage && (
-            <div
-              className="interest-picker"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="picker-label">Pick interests</p>
-              <InterestChips
-                selected={p.interests}
-                disabled={p.busy}
-                onToggle={p.onToggleInterest}
-              />
+          <input
+            type="text"
+            className="interest-input"
+            value={interestSearch}
+            onChange={(e) => setInterestSearch(e.target.value)}
+            placeholder="Search interests…"
+            disabled={p.busy || !p.interestsOn}
+          />
+          <div className="interest-chip-row">
+            {filtered.map((tag) => (
               <button
+                key={tag}
                 type="button"
-                className="done-btn"
-                onClick={() => setManage(false)}
+                className={`interest-chip ${p.interests.includes(tag) ? "selected" : ""}`}
+                onClick={() => p.onToggleInterest(tag)}
+                disabled={p.busy || !p.interestsOn}
               >
-                Done
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="gender-block">
-          <p className="gender-label">Gender Filter:</p>
-          <div className="gender-grid">
-            {GENDER_FILTERS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`gender-card ${p.filterGender === opt.value ? "selected" : ""}`}
-                disabled={p.busy}
-                onClick={() => p.onFilterGender(opt.value)}
-              >
-                <span className="gender-icon">{opt.icon}</span>
-                <span>{opt.label}</span>
+                {tag}
               </button>
             ))}
           </div>
         </div>
 
-        <label className="country-field">
-          <span>Country (optional)</span>
-          <input
-            value={p.filterCountry}
-            onChange={(e) => p.onFilterCountry(e.target.value)}
-            placeholder="Any country"
-            disabled={p.busy}
-          />
-        </label>
+        <div className="nc-filters">
+          <div className="nc-filter-group">
+            <label className="nc-label">I am</label>
+            <div className="seg-control">
+              {(["male", "unspecified", "female"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  className={`seg-btn ${p.gender === g ? "active" : ""}`}
+                  onClick={() => p.onGenderChange(g)}
+                  disabled={p.busy}
+                >
+                  {g === "unspecified"
+                    ? "Other"
+                    : g.charAt(0).toUpperCase() + g.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <label className="country-field">
-          <span>Your gender (for matching)</span>
-          <select
-            value={p.gender}
-            onChange={(e) => p.onGenderChange(e.target.value)}
-            disabled={p.busy}
-          >
-            <option value="unspecified">Prefer not to say</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </label>
+          <div className="nc-filter-group">
+            <label className="nc-label">Looking for</label>
+            <div className="seg-control">
+              {(["male", "any", "female"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  className={`seg-btn ${p.filterGender === g ? "active" : ""}`}
+                  onClick={() => p.onFilterGender(g)}
+                  disabled={p.busy}
+                >
+                  {g === "any"
+                    ? "Anyone"
+                    : g.charAt(0).toUpperCase() + g.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <div className="start-row">
-          <button
-            type="button"
-            className="video-btn"
-            title="Video chat coming later"
-            disabled
-          >
-            📹
-          </button>
-          <button
-            type="button"
-            className="start-text-btn"
-            onClick={p.onStart}
-            disabled={!p.canStart}
-          >
-            <span aria-hidden="true">💬</span>
-            Start Text Chat
-          </button>
+          <div className="nc-filter-group">
+            <label className="nc-label">Country</label>
+            <div className="select-wrap">
+              <select
+                value={p.filterCountry || "any"}
+                onChange={(e) =>
+                  p.onFilterCountry(
+                    e.target.value === "any" ? "" : e.target.value,
+                  )
+                }
+                disabled={p.busy}
+              >
+                {COUNTRY_OPTIONS.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
-
-        <p className="rules">Be respectful and follow our chat rules.</p>
       </div>
+
+      <button
+        type="button"
+        className="start-chat-btn"
+        onClick={p.onStart}
+        disabled={!p.canStart || p.busy}
+      >
+        <span className="chat-emoji" aria-hidden="true">
+          ✉
+        </span>
+        Start Text Chat
+      </button>
     </section>
   );
 }

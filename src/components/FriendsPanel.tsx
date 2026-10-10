@@ -52,8 +52,10 @@ export function FriendsPanel({ friends, pendingRequests, onOpen, onRemove, onAcc
         </div>
       )}
 
-      <p className="muted" style={{ marginTop: pendingRequests.length > 0 ? 16 : 0 }}>
-        Pick someone from Direct Messages on the left to open a saved chat.
+      <p className="muted" style={{ fontSize: '0.82rem' }}>
+        {friends.length === 0
+          ? 'No friends yet. Add friends during a random chat.'
+          : 'Click a friend to open their DM.'}
       </p>
       <ul className="friends-list">
         {friends.length === 0 && (

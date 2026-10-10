@@ -27,6 +27,9 @@ export function useProfile(
     () => localStorage.getItem(KEYS.displayName) ?? "",
   );
   const [gender, setGender] = useState("unspecified");
+  const [country, setCountry] = useState(
+    () => localStorage.getItem("chitchat_country") ?? "",
+  );
   const [interests, setInterests] = useState<string[]>(loadInterests);
   const [interestsOn, setInterestsOn] = useState(true);
   const [avatarHue, setAvatarHue] = useState(loadAvatarHue);
@@ -35,7 +38,6 @@ export function useProfile(
   const [nameChangesLeft, setNameChangesLeft] = useState(
     () => nameChangeQuota().left,
   );
-  const country = "";
 
   // Always holds the latest values so socket callbacks never see stale state.
   const profileRef = useRef<ProfileSnapshot>({} as ProfileSnapshot);
@@ -55,6 +57,10 @@ export function useProfile(
       localStorage.setItem(KEYS.displayName, p.displayName);
     }
     if (p.gender) setGender(p.gender);
+    if (p.country !== undefined) {
+      setCountry(p.country);
+      localStorage.setItem("chitchat_country", p.country);
+    }
     if (Array.isArray(p.interests)) {
       const next = p.interests.filter((t) =>
         (INTEREST_OPTIONS as readonly string[]).includes(t),
@@ -118,6 +124,12 @@ export function useProfile(
     persistProfile({ gender: value });
   };
 
+  const changeCountry = (value: string) => {
+    setCountry(value);
+    localStorage.setItem("chitchat_country", value);
+    persistProfile({ country: value });
+  };
+
   const setAvatar = (hue: number) => {
     setAvatarHue(hue);
     localStorage.setItem(KEYS.avatarHue, String(hue));
@@ -167,6 +179,7 @@ export function useProfile(
     toggleInterest,
     toggleInterestsOn,
     changeGender,
+    changeCountry,
     cycleAvatar,
     resetAvatar,
     changeBanner,

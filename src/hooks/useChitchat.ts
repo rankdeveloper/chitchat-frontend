@@ -386,7 +386,6 @@ export function useChitchat({
   }
 
   const openDm = (friend: FriendRow) => {
-    setNav('friends')
     setActiveDmId(friend.publicId)
     setDmChatId(friend.chatId ?? null)
     setDmMessages([])
