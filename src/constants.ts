@@ -1,8 +1,7 @@
-export const INTEREST_OPTIONS = [
-  'Gaming', 'Anime', 'Music', 'Movies', 'Sports',
-  'Football', 'Basketball', 'Travel', 'Cooking', 'Art',
-  'Photography', 'Reading', 'Fitness', 'Technology', 'JavaScript',
-  'Python', 'Fashion', 'Dance', 'Memes', 'Crypto',
+export const INTEREST_SUGGESTIONS = [
+  'Gaming', 'Anime', 'Music', 'Movies', 'Sports', 'Travel',
+  'Cooking', 'Art', 'Photography', 'Reading', 'Fitness',
+  'Technology', 'Fashion', 'Dance', 'Memes', 'Crypto',
 ] as const
 
 export const COUNTRY_OPTIONS = [

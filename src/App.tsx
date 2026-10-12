@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Bell, Settings } from "lucide-react";
 import type { Socket } from "socket.io-client";
 import { ProfileCard } from "./components/ProfileCard";
 import { Avatar } from "./components/Avatar";
@@ -185,7 +186,7 @@ export default function App() {
                 onClick={() => setNotifOpen((v) => !v)}
                 title="Notifications"
               >
-                🔔
+                <Bell size={16} />
                 {chat.pendingRequests.length > 0 && (
                   <span className="header-badge">{chat.pendingRequests.length}</span>
                 )}
@@ -237,7 +238,7 @@ export default function App() {
             onClick={openSettings}
             title="Settings"
           >
-            <span className="history-icon">⚙</span>
+            <Settings size={15} />
             Settings
           </button>
         </div>

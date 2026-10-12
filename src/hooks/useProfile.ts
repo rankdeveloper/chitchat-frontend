@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from "react";
 import {
   AVATAR_HUES,
   DEFAULT_AVATAR_HUE,
-  INTEREST_OPTIONS,
 } from "../constants";
 import { resolveName } from "../lib/profile";
 import {
@@ -62,11 +61,8 @@ export function useProfile(
       localStorage.setItem("chitchat_country", p.country);
     }
     if (Array.isArray(p.interests)) {
-      const next = p.interests.filter((t) =>
-        (INTEREST_OPTIONS as readonly string[]).includes(t),
-      );
-      setInterests(next);
-      localStorage.setItem(KEYS.interests, JSON.stringify(next));
+      setInterests(p.interests);
+      localStorage.setItem(KEYS.interests, JSON.stringify(p.interests));
     }
     if (typeof p.interestsOn === "boolean") setInterestsOn(p.interestsOn);
     if (typeof p.avatarHue === "number") {

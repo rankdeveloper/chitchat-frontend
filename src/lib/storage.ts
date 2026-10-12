@@ -1,6 +1,5 @@
 import {
   DEFAULT_AVATAR_HUE,
-  INTEREST_OPTIONS,
   MAX_NAME_CHANGES_PER_DAY,
 } from '../constants'
 import type { BannerStyle } from '../types'
@@ -29,9 +28,7 @@ export function loadInterests(): string[] {
     if (!raw) return []
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return []
-    return parsed
-      .map(String)
-      .filter((t) => (INTEREST_OPTIONS as readonly string[]).includes(t))
+    return parsed.map(String).filter((t) => t.length > 0)
   } catch {
     return []
   }

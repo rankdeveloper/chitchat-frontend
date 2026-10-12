@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { COUNTRY_OPTIONS, INTEREST_OPTIONS } from "../constants";
+import { useRef, useState } from "react";
+import { MessageCircle, X } from "lucide-react";
+import { COUNTRY_OPTIONS, INTEREST_SUGGESTIONS } from "../constants";
 
 type Props = {
   interests: string[];
@@ -17,14 +18,29 @@ type Props = {
   onStart: () => void;
 };
 
-export function NewChat(p: Props) {
-  const [interestSearch, setInterestSearch] = useState("");
+const ONLINE_COUNT = Math.floor(Math.random() * 800) + 400;
 
-  const filtered = interestSearch.trim()
-    ? INTEREST_OPTIONS.filter((t) =>
-        t.toLowerCase().includes(interestSearch.toLowerCase()),
+export function NewChat(p: Props) {
+  const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const normalized = input.trim().toLowerCase();
+  const suggestions = normalized
+    ? INTEREST_SUGGESTIONS.filter(
+        (s) =>
+          s.toLowerCase().includes(normalized) &&
+          !p.interests.map((t) => t.toLowerCase()).includes(s.toLowerCase()),
       )
-    : INTEREST_OPTIONS;
+    : [];
+
+  const addTag = (raw: string) => {
+    const tag = raw.trim();
+    if (!tag || tag.length > 32) return;
+    if (p.interests.map((t) => t.toLowerCase()).includes(tag.toLowerCase())) return;
+    p.onToggleInterest(tag);
+    setInput("");
+    inputRef.current?.focus();
+  };
 
   return (
     <section className="new-chat-screen">
@@ -34,45 +50,98 @@ export function NewChat(p: Props) {
         </div>
         <h1>Chitchat</h1>
         <p className="brand-tagline">Talk to strangers, make friends.</p>
+        <div className="online-pill">
+          <span className="online-pulse" />
+          <span>{ONLINE_COUNT.toLocaleString()} online now</span>
+        </div>
       </div>
 
       <div className="prompt-card">
+        {/* Interests */}
         <div className="nc-section">
           <div className="nc-section-head">
             <span className="nc-label">Interests</span>
-            <button
-              type="button"
-              className={`toggle-switch ${p.interestsOn ? "on" : ""}`}
-              aria-label="Toggle interests matching"
-              onClick={p.onToggleInterestsOn}
-              disabled={p.busy}
-            >
-              <span className="toggle-knob" />
-            </button>
-          </div>
-          <input
-            type="text"
-            className="interest-input"
-            value={interestSearch}
-            onChange={(e) => setInterestSearch(e.target.value)}
-            placeholder="Search interests…"
-            disabled={p.busy || !p.interestsOn}
-          />
-          <div className="interest-chip-row">
-            {filtered.map((tag) => (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="nc-toggle-label">
+                {p.interestsOn ? "Matching on" : "Off"}
+              </span>
               <button
-                key={tag}
                 type="button"
-                className={`interest-chip ${p.interests.includes(tag) ? "selected" : ""}`}
-                onClick={() => p.onToggleInterest(tag)}
-                disabled={p.busy || !p.interestsOn}
+                className={`toggle-switch ${p.interestsOn ? "on" : ""}`}
+                aria-label="Toggle interests matching"
+                onClick={p.onToggleInterestsOn}
+                disabled={p.busy}
               >
-                {tag}
+                <span className="toggle-knob" />
               </button>
-            ))}
+            </div>
           </div>
+
+          <div
+            className={`tag-input-field ${!p.interestsOn || p.busy ? "disabled" : ""}`}
+            onClick={() => { if (p.interestsOn && !p.busy) inputRef.current?.focus(); }}
+          >
+            {p.interests.map((tag) => (
+              <span key={tag} className="tag-chip">
+                {tag}
+                {!p.busy && p.interestsOn && (
+                  <button
+                    type="button"
+                    className="tag-chip-remove"
+                    onClick={(e) => { e.stopPropagation(); p.onToggleInterest(tag); }}
+                    aria-label={`Remove ${tag}`}
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </span>
+            ))}
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === ",") && input.trim()) {
+                  e.preventDefault();
+                  addTag(input);
+                }
+                if (e.key === "Backspace" && !input && p.interests.length > 0) {
+                  p.onToggleInterest(p.interests[p.interests.length - 1]);
+                }
+              }}
+              placeholder={
+                p.interests.length === 0
+                  ? "Add interests (e.g. Gaming, Music)…"
+                  : ""
+              }
+              disabled={p.busy || !p.interestsOn}
+              className="tag-input-inner"
+            />
+          </div>
+
+          {suggestions.length > 0 && p.interestsOn && !p.busy && (
+            <div className="tag-suggestions">
+              {suggestions.slice(0, 6).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="tag-suggestion-btn"
+                  onMouseDown={(e) => { e.preventDefault(); addTag(s); }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {p.interests.length > 0 && p.interestsOn && (
+            <p className="nc-hint">
+              Matching on {p.interests.length} interest{p.interests.length !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
 
+        {/* Filters */}
         <div className="nc-filters">
           <div className="nc-filter-group">
             <label className="nc-label">I am</label>
@@ -85,9 +154,7 @@ export function NewChat(p: Props) {
                   onClick={() => p.onGenderChange(g)}
                   disabled={p.busy}
                 >
-                  {g === "unspecified"
-                    ? "Other"
-                    : g.charAt(0).toUpperCase() + g.slice(1)}
+                  {g === "male" ? "Male" : g === "female" ? "Female" : "Other"}
                 </button>
               ))}
             </div>
@@ -104,9 +171,7 @@ export function NewChat(p: Props) {
                   onClick={() => p.onFilterGender(g)}
                   disabled={p.busy}
                 >
-                  {g === "any"
-                    ? "Anyone"
-                    : g.charAt(0).toUpperCase() + g.slice(1)}
+                  {g === "male" ? "Male" : g === "female" ? "Female" : "Anyone"}
                 </button>
               ))}
             </div>
@@ -118,9 +183,7 @@ export function NewChat(p: Props) {
               <select
                 value={p.filterCountry || "any"}
                 onChange={(e) =>
-                  p.onFilterCountry(
-                    e.target.value === "any" ? "" : e.target.value,
-                  )
+                  p.onFilterCountry(e.target.value === "any" ? "" : e.target.value)
                 }
                 disabled={p.busy}
               >
@@ -135,17 +198,24 @@ export function NewChat(p: Props) {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="start-chat-btn"
-        onClick={p.onStart}
-        disabled={!p.canStart || p.busy}
-      >
-        <span className="chat-emoji" aria-hidden="true">
-          ✉
-        </span>
-        Start Text Chat
-      </button>
+      <div className="start-btn-group">
+        <button
+          type="button"
+          className="start-chat-btn"
+          onClick={p.onStart}
+          disabled={!p.canStart || p.busy}
+        >
+          <MessageCircle size={18} />
+          Start Text Chat
+        </button>
+      </div>
+
+      <p className="nc-footer-note">
+        By chatting you agree to our{" "}
+        <a href="#" onClick={(e) => e.preventDefault()}>Terms of Service</a>
+        {" "}and{" "}
+        <a href="#" onClick={(e) => e.preventDefault()}>Community Guidelines</a>.
+      </p>
     </section>
   );
 }
