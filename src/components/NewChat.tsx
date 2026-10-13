@@ -10,6 +10,7 @@ type Props = {
   filterCountry: string;
   busy: boolean;
   canStart: boolean;
+  onlineCount: number;
   onToggleInterest: (tag: string) => void;
   onToggleInterestsOn: () => void;
   onGenderChange: (value: string) => void;
@@ -17,8 +18,6 @@ type Props = {
   onFilterCountry: (value: string) => void;
   onStart: () => void;
 };
-
-const ONLINE_COUNT = Math.floor(Math.random() * 800) + 400;
 
 export function NewChat(p: Props) {
   const [input, setInput] = useState("");
@@ -52,7 +51,7 @@ export function NewChat(p: Props) {
         <p className="brand-tagline">Talk to strangers, make friends.</p>
         <div className="online-pill">
           <span className="online-pulse" />
-          <span>{ONLINE_COUNT.toLocaleString()} online now</span>
+          <span>{(p.onlineCount || 0).toLocaleString()} online now</span>
         </div>
       </div>
 

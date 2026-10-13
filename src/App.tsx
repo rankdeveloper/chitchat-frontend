@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, Settings } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Bell, Settings, Users } from "lucide-react";
 import type { Socket } from "socket.io-client";
 import { ProfileCard } from "./components/ProfileCard";
 import { Avatar } from "./components/Avatar";
@@ -9,14 +10,18 @@ import { FriendsPanel } from "./components/FriendsPanel";
 import { NewChat } from "./components/NewChat";
 import { SettingsModal } from "./components/SettingsModal";
 import { Sidebar } from "./components/Sidebar";
+import { AgeGateModal } from "./components/AgeGateModal";
+import { LandingPage } from "./components/LandingPage";
 import { useChitchat } from "./hooks/useChitchat";
 import { useProfile } from "./hooks/useProfile";
 import { useToast } from "./hooks/useToast";
 import { loadOrCreateUserId } from "./lib/storage";
 import "./App.css";
 import "./profile.css";
+import "./landing-v2.css";
 
 export default function App() {
+  const [showLanding, setShowLanding] = useState(true);
   const socketRef = useRef<Socket | null>(null);
   const userId = useMemo(loadOrCreateUserId, []);
   const { toast, showToast } = useToast();
@@ -35,6 +40,25 @@ export default function App() {
   const [profileCardOpen, setProfileCardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(1);
+  const notifBtnRef = useRef<HTMLDivElement>(null);
+  const [notifPos, setNotifPos] = useState<{ top: number; right: number } | null>(null);
+
+  useEffect(() => {
+    if (notifOpen && notifBtnRef.current) {
+      const rect = notifBtnRef.current.getBoundingClientRect();
+      setNotifPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+  }, [notifOpen]);
+
+  useEffect(() => {
+    if (!socketRef.current) return;
+    const handleOnlineCount = (count: number) => setOnlineCount(count);
+    socketRef.current.on("online_count", handleOnlineCount);
+    return () => {
+      socketRef.current?.off("online_count", handleOnlineCount);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -57,6 +81,10 @@ export default function App() {
     setProfileCardOpen(false);
     setNotifOpen(false);
   };
+
+  if (showLanding) {
+    return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+  }
 
   const inSession = chat.phase === "searching" || chat.phase === "chatting";
   const activeFriend =
@@ -147,52 +175,62 @@ export default function App() {
   };
 
   return (
-    <div className="shell">
-      <Sidebar
-        phase={chat.phase}
-        nav={chat.nav}
-        activeDmId={chat.activeDmId}
-        showNewChat={chat.nav === "chat" && !inSession && !chat.activeDmId}
-        friends={chat.friends}
-        onlineFriends={chat.onlineFriends}
-        pendingRequests={chat.pendingRequests}
-        displayName={profile.displayName}
-        avatarHue={profile.avatarHue}
-        onChat={chat.goNewChat}
-        onFriends={chat.openFriendsTab}
-        onOpenDm={chat.openDm}
-        onRemoveFriend={chat.removeFriend}
-        onOpenProfile={openProfile}
-        onOpenSettings={openSettings}
-      />
+    <>
+      <AgeGateModal onAccept={() => {}} />
+      <div className="shell">
+        <Sidebar
+          phase={chat.phase}
+          nav={chat.nav}
+          activeDmId={chat.activeDmId}
+          showNewChat={chat.nav === "chat" && !inSession && !chat.activeDmId}
+          friends={chat.friends}
+          onlineFriends={chat.onlineFriends}
+          pendingRequests={chat.pendingRequests}
+          displayName={profile.displayName}
+          avatarHue={profile.avatarHue}
+          onChat={chat.goNewChat}
+          onFriends={chat.openFriendsTab}
+          onOpenDm={chat.openDm}
+          onRemoveFriend={chat.removeFriend}
+          onOpenProfile={openProfile}
+          onOpenSettings={openSettings}
+        />
 
-      <main className="main">
-        <div className="page-header">
-          <div className="page-header-actions">
-            <button
-              type="button"
-              className="header-icon"
-              aria-label="Profile"
-              onClick={openProfile}
-              title="Your profile"
-            >
-              <Avatar name={profile.displayName || "Guest"} hue={profile.avatarHue} size={26} />
-            </button>
-            <div className="notif-wrap">
+        <main className="main">
+          <div className="page-header">
+            <div className="page-header-actions">
               <button
                 type="button"
                 className="header-icon"
-                aria-label="Notifications"
-                onClick={() => setNotifOpen((v) => !v)}
-                title="Notifications"
+                aria-label="Profile"
+                onClick={openProfile}
+                title="Your profile"
               >
-                <Bell size={16} />
-                {chat.pendingRequests.length > 0 && (
-                  <span className="header-badge">{chat.pendingRequests.length}</span>
-                )}
+                <Avatar name={profile.displayName || "Guest"} hue={profile.avatarHue} size={26} />
               </button>
-              {notifOpen && (
-                <div className="notif-panel">
+              <div className="online-count" title="Users online">
+                <Users size={14} />
+                <span>{onlineCount}</span>
+              </div>
+              <div className="notif-wrap" ref={notifBtnRef}>
+                <button
+                  type="button"
+                  className="header-icon"
+                  aria-label="Notifications"
+                  onClick={() => setNotifOpen((v) => !v)}
+                  title="Notifications"
+                >
+                  <Bell size={16} />
+                  {chat.pendingRequests.length > 0 && (
+                    <span className="header-badge">{chat.pendingRequests.length}</span>
+                  )}
+                </button>
+              </div>
+              {notifOpen && notifPos && createPortal(
+                <div
+                  className="notif-panel"
+                  style={{ position: "fixed", top: notifPos.top, right: notifPos.right }}
+                >
                   <div className="notif-head">Notifications</div>
                   {chat.pendingRequests.length === 0 ? (
                     <p className="notif-empty">No new notifications.</p>
@@ -228,74 +266,75 @@ export default function App() {
                       ))}
                     </ul>
                   )}
-                </div>
+                </div>,
+                document.body
               )}
             </div>
+            <button
+              type="button"
+              className="history-btn"
+              onClick={openSettings}
+              title="Settings"
+            >
+              <Settings size={15} />
+              Settings
+            </button>
           </div>
-          <button
-            type="button"
-            className="history-btn"
-            onClick={openSettings}
-            title="Settings"
-          >
-            <Settings size={15} />
-            Settings
-          </button>
-        </div>
 
-        {chat.connectionError && (
-          <div className="banner error">{chat.connectionError}</div>
-        )}
-        {renderMain()}
-      </main>
+          {chat.connectionError && (
+            <div className="banner error">{chat.connectionError}</div>
+          )}
+          {renderMain()}
+        </main>
 
-      {/* Toast */}
-      {toast && <div className="global-toast">{toast}</div>}
+        {/* Toast */}
+        {toast && <div className="global-toast">{toast}</div>}
 
-      <ProfileCard
-        open={profileCardOpen}
-        profile={{
-          publicId: userId,
-          displayName: profile.displayName,
-          gender: profile.gender,
-          country: profile.country,
-          interests: profile.interests,
-          interestsOn: profile.interestsOn,
-          avatarHue: profile.avatarHue,
-          bannerStyle: profile.bannerStyle,
-          joinDate: profile.joinDate,
-        }}
-        avatar={
-          <Avatar
-            name={profile.displayName || "Guest"}
-            hue={profile.avatarHue}
-            size={92}
-          />
-        }
-        onClose={() => setProfileCardOpen(false)}
-        onEditProfile={openSettings}
-      />
-
-      {settingsOpen && (
-        <SettingsModal
-          displayName={profile.displayName}
-          avatarHue={profile.avatarHue}
-          bannerStyle={profile.bannerStyle}
-          gender={profile.gender}
-          country={profile.country}
-          interests={profile.interests}
-          interestsOn={profile.interestsOn}
-          nameChangesLeft={profile.nameChangesLeft}
-          onClose={() => setSettingsOpen(false)}
-          onCycleAvatar={profile.cycleAvatar}
-          onResetAvatar={profile.resetAvatar}
-          onBanner={profile.changeBanner}
-          onToggleInterest={profile.toggleInterest}
-          onCommitName={profile.commitUsername}
-          onGenderChange={profile.changeGender}
-          onCountryChange={profile.changeCountry}
+        <ProfileCard
+          open={profileCardOpen}
+          profile={{
+            publicId: userId,
+            displayName: profile.displayName,
+            gender: profile.gender,
+            country: profile.country,
+            interests: profile.interests,
+            interestsOn: profile.interestsOn,
+            avatarHue: profile.avatarHue,
+            bannerStyle: profile.bannerStyle,
+            joinDate: profile.joinDate,
+          }}
+          avatar={
+            <Avatar
+              name={profile.displayName || "Guest"}
+              hue={profile.avatarHue}
+              size={92}
+            />
+          }
+          onClose={() => setProfileCardOpen(false)}
+          onEditProfile={openSettings}
         />
-      )}
-    </div>
+
+        {settingsOpen && (
+          <SettingsModal
+            displayName={profile.displayName}
+            avatarHue={profile.avatarHue}
+            bannerStyle={profile.bannerStyle}
+            gender={profile.gender}
+            country={profile.country}
+            interests={profile.interests}
+            interestsOn={profile.interestsOn}
+            nameChangesLeft={profile.nameChangesLeft}
+            onClose={() => setSettingsOpen(false)}
+            onCycleAvatar={profile.cycleAvatar}
+            onResetAvatar={profile.resetAvatar}
+            onBanner={profile.changeBanner}
+            onToggleInterest={profile.toggleInterest}
+            onCommitName={profile.commitUsername}
+            onGenderChange={profile.changeGender}
+            onCountryChange={profile.changeCountry}
+          />
+        )}
+      </div>
+    </>
   );
 }

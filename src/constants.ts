@@ -35,7 +35,6 @@ export const TOAST_MS = 3200
 export const SETTINGS_TABS = [
   ['profile', 'Profile'],
   ['account', 'Account'],
-  ['standing', 'Standing'],
   ['privacy', 'Privacy'],
   ['preferences', 'Preferences'],
   ['blocked', 'Blocked'],

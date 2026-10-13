@@ -2,6 +2,7 @@ import {
   DEFAULT_AVATAR_HUE,
   MAX_NAME_CHANGES_PER_DAY,
 } from '../constants'
+import { generateName } from './profile'
 import type { BannerStyle } from '../types'
 
 export const KEYS = {
@@ -20,6 +21,15 @@ export function loadOrCreateUserId(): string {
     localStorage.setItem(KEYS.userId, id)
   }
   return id
+}
+
+export function loadOrCreateDisplayName(): string {
+  let name = localStorage.getItem(KEYS.displayName)
+  if (!name) {
+    name = generateName()
+    localStorage.setItem(KEYS.displayName, name)
+  }
+  return name
 }
 
 export function loadInterests(): string[] {

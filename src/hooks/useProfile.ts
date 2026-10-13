@@ -9,6 +9,7 @@ import {
   loadAvatarHue,
   loadBanner,
   loadInterests,
+  loadOrCreateDisplayName,
   nameChangeQuota,
 } from "../lib/storage";
 import type {
@@ -23,7 +24,7 @@ export function useProfile(
   showToast: (msg: string) => void,
 ) {
   const [displayName, setDisplayName] = useState(
-    () => localStorage.getItem(KEYS.displayName) ?? "",
+    () => loadOrCreateDisplayName(),
   );
   const [gender, setGender] = useState("unspecified");
   const [country, setCountry] = useState(

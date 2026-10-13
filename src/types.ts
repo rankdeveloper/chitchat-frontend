@@ -33,13 +33,13 @@ export type UiPhase =
   | 'idle'
   | 'searching'
   | 'chatting'
+  | 'spying'
 
 export type NavTab = 'chat' | 'friends'
 
 export type SettingsTab =
   | 'profile'
   | 'account'
-  | 'standing'
   | 'privacy'
   | 'preferences'
   | 'blocked'

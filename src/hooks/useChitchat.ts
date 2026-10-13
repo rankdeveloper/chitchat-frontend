@@ -38,10 +38,19 @@ export function useChitchat({
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [nav, setNav] = useState<NavTab>('chat')
 
-  const [partnerLabel, setPartnerLabel] = useState<string | null>(null)
-  const [partnerPublicId, setPartnerPublicId] = useState<string | null>(null)
+  const [partnerLabel, setPartnerLabel] = useState<string | null>(
+    () => sessionStorage.getItem('cc_partner_label')
+  )
+  const [partnerPublicId, setPartnerPublicId] = useState<string | null>(
+    () => sessionStorage.getItem('cc_partner_id')
+  )
   const [partnerTyping, setPartnerTyping] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const raw = sessionStorage.getItem('cc_messages')
+      return raw ? (JSON.parse(raw) as ChatMessage[]) : []
+    } catch { return [] }
+  })
   const [friendRequestSent, setFriendRequestSent] = useState(false)
 
   const [friends, setFriends] = useState<FriendRow[]>([])
@@ -72,8 +81,13 @@ export function useChitchat({
       setPartnerTyping(false)
       setFriendRequestSent(false)
       setMessages([])
+      sessionStorage.removeItem('cc_messages')
+      sessionStorage.removeItem('cc_partner_label')
+      sessionStorage.removeItem('cc_partner_id')
+      sessionStorage.removeItem('cc_phase')
     }
     const backToSearching = () => {
+      sessionStorage.removeItem('cc_phase')
       setPhase('searching')
       resetSession()
     }
@@ -82,7 +96,6 @@ export function useChitchat({
 
     socket.on('connect', () => {
       setConnectionError(null)
-      setPhase('registering')
       const p = profileRef.current
       const name = resolveName(p.displayName)
       localStorage.setItem(KEYS.displayName, name)
@@ -97,9 +110,17 @@ export function useChitchat({
           if (err) {
             setConnectionError(err)
             setPhase('disconnected')
+            sessionStorage.removeItem('cc_phase')
+            return
+          }
+          // Check if we're restoring a chat session
+          const saved = sessionStorage.getItem('cc_phase')
+          if (saved === 'chatting') {
+            // Session will be restored by server, don't change phase
             return
           }
           setPhase('idle')
+          sessionStorage.removeItem('cc_phase')
           socket.emit('list_friends')
         },
       )
@@ -131,25 +152,34 @@ export function useChitchat({
     socket.on(
       'matched',
       (payload: { partnerPublicId: string; partnerDisplayName: string }) => {
+        const label = payload.partnerDisplayName ?? 'Stranger'
         setPhase('chatting')
-        setPartnerLabel(payload.partnerDisplayName ?? 'Stranger')
+        setPartnerLabel(label)
         setPartnerPublicId(payload.partnerPublicId)
         setFriendRequestSent(false)
         setMessages([])
+        sessionStorage.setItem('cc_phase', 'chatting')
+        sessionStorage.setItem('cc_partner_label', label)
+        sessionStorage.setItem('cc_partner_id', payload.partnerPublicId)
+        sessionStorage.removeItem('cc_messages')
       },
     )
 
     socket.on(
       'chat_message',
       (payload: { fromPublicId?: string; text: string; ts: number }) => {
-        setMessages((m) => [
-          ...m,
-          {
-            fromSelf: payload.fromPublicId === userId,
-            text: payload.text,
-            ts: payload.ts,
-          },
-        ])
+        setMessages((m) => {
+          const next = [
+            ...m,
+            {
+              fromSelf: payload.fromPublicId === userId,
+              text: payload.text,
+              ts: payload.ts,
+            },
+          ]
+          sessionStorage.setItem('cc_messages', JSON.stringify(next))
+          return next
+        })
       },
     )
 
@@ -235,7 +265,37 @@ export function useChitchat({
       backToSearching()
     })
     socket.on('session_reset', resetSession)
-    socket.on('search_cancelled', () => setPhase('idle'))
+    socket.on('search_cancelled', () => {
+      setPhase('idle')
+      sessionStorage.removeItem('cc_phase')
+    })
+    socket.on('session_restored', (payload: { partnerPublicId: string; partnerDisplayName: string; randomChatId?: string }) => {
+      setPhase('chatting')
+      setPartnerLabel(payload.partnerDisplayName ?? 'Stranger')
+      setPartnerPublicId(payload.partnerPublicId)
+      setMessages([])
+      sessionStorage.setItem('cc_phase', 'chatting')
+      sessionStorage.setItem('cc_partner_label', payload.partnerDisplayName ?? 'Stranger')
+      sessionStorage.setItem('cc_partner_id', payload.partnerPublicId)
+      showToast('Reconnected to chat!')
+      // Request message history from server
+      if (payload.randomChatId) {
+        socket.emit('random_history', { randomChatId: payload.randomChatId })
+      }
+      socket.emit('list_friends')
+    })
+    socket.on('partner_reconnected', () => {
+      showToast('Your partner reconnected!')
+    })
+    socket.on('random_chat_history', (body: { randomChatId: string; messages: Array<{ fromPublicId: string; text: string; ts: number }> }) => {
+      const msgs = body.messages.map(m => ({
+        fromSelf: m.fromPublicId === userId,
+        text: m.text,
+        ts: m.ts,
+      }))
+      setMessages(msgs)
+      sessionStorage.setItem('cc_messages', JSON.stringify(msgs))
+    })
 
     // ── friends & DMs ────────────────────────────────────────────
     socket.on('friends_list', applyFriends)
@@ -372,7 +432,11 @@ export function useChitchat({
 
   const sendMessage = (text: string) => {
     if (!socketRef.current) return
-    setMessages((m) => [...m, { fromSelf: true, text, ts: Date.now() }])
+    setMessages((m) => {
+      const next = [...m, { fromSelf: true, text, ts: Date.now() }]
+      sessionStorage.setItem('cc_messages', JSON.stringify(next))
+      return next
+    })
     emitWithToast('chat_message', { text })
     window.clearTimeout(typingTimerRef.current)
     emit('stop_typing')
