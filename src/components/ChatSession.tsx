@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Flag, MoreHorizontal, Send, Smile, UserPlus } from "lucide-react";
+import {
+  Ban,
+  Check,
+  ChevronRight,
+  Flag,
+  MoreHorizontal,
+  Search,
+  Send,
+  SkipForward,
+  Smile,
+  User,
+  UserPlus,
+} from "lucide-react";
 import type { ChatMessage, UiPhase } from "../types";
 
 type Props = {
@@ -18,7 +30,20 @@ type Props = {
   onReport: () => void;
 };
 
-const QUICK_EMOJIS = ["😂", "❤️", "👍", "🔥", "😮", "😢", "🎉", "👋", "😍", "🤣", "😭", "🙏"];
+const QUICK_EMOJIS = [
+  "😂",
+  "❤️",
+  "👍",
+  "🔥",
+  "😮",
+  "😢",
+  "🎉",
+  "👋",
+  "😍",
+  "🤣",
+  "😭",
+  "🙏",
+];
 const MAX_CHARS = 500;
 
 export function ChatSession(p: Props) {
@@ -51,7 +76,10 @@ export function ChatSession(p: Props) {
     setReactions((prev) => {
       const cur = prev[idx] ?? [];
       const has = cur.includes(emoji);
-      return { ...prev, [idx]: has ? cur.filter((e) => e !== emoji) : [...cur, emoji] };
+      return {
+        ...prev,
+        [idx]: has ? cur.filter((e) => e !== emoji) : [...cur, emoji],
+      };
     });
   };
 
@@ -63,7 +91,9 @@ export function ChatSession(p: Props) {
       <section className="chat-screen">
         <div className="search-panel">
           <div className="search-pulse-ring" aria-hidden="true">
-            <div className="search-pulse-inner">🔍</div>
+            <div className="search-pulse-inner">
+              <Search size={30} />
+            </div>
           </div>
           <h2>Finding someone…</h2>
           <p>Searching for a chat partner that matches your preferences.</p>
@@ -72,6 +102,7 @@ export function ChatSession(p: Props) {
               Cancel
             </button>
             <button type="button" className="primary-btn" onClick={p.onNext}>
+              <SkipForward size={16} />
               Skip
             </button>
           </div>
@@ -85,12 +116,14 @@ export function ChatSession(p: Props) {
       <div className="chat-header-pill">
         <div className="chat-partner-info">
           <div className="partner-avatar-ring">
-            <span className="mini-avatar" aria-hidden="true" />
+            <span className="mini-avatar" aria-hidden="true">
+              <User size={22} />
+            </span>
             <span className="partner-online-dot" />
           </div>
           <div>
             <span className="chat-partner-name">@{partner}</span>
-            <span className="chat-partner-sub">Stranger · Random chat</span>
+            <span className="chat-partner-sub">Random chat</span>
           </div>
         </div>
 
@@ -102,10 +135,12 @@ export function ChatSession(p: Props) {
               onClick={p.onSendFriendRequest}
               title="Add friend"
             >
-              <UserPlus size={13} /> Friend
+              <UserPlus size={16} /> Friend
             </button>
           ) : (
-            <span className="pill-sent">✓ Sent</span>
+            <span className="pill-sent">
+              <Check size={16} /> Sent
+            </span>
           )}
 
           <div className="report-wrap">
@@ -114,16 +149,30 @@ export function ChatSession(p: Props) {
               className="pill-action-btn danger"
               onClick={() => setShowMenu((v) => !v)}
               title="More options"
+              aria-label="More options"
+              aria-expanded={showMenu}
             >
-              <MoreHorizontal size={14} />
+              <MoreHorizontal size={18} />
             </button>
             {showMenu && (
               <div className="report-menu">
-                <button type="button" onClick={() => { p.onReport(); setShowMenu(false); }}>
-                  <Flag size={13} /> Report user
+                <button
+                  type="button"
+                  onClick={() => {
+                    p.onReport();
+                    setShowMenu(false);
+                  }}
+                >
+                  <Flag size={16} /> Report user
                 </button>
-                <button type="button" onClick={() => { p.onBlock(); setShowMenu(false); }}>
-                  🚫 Block user
+                <button
+                  type="button"
+                  onClick={() => {
+                    p.onBlock();
+                    setShowMenu(false);
+                  }}
+                >
+                  <Ban size={16} /> Block user
                 </button>
               </div>
             )}
@@ -135,7 +184,7 @@ export function ChatSession(p: Props) {
             onClick={p.onNext}
             title="Next chat"
           >
-            Next ›
+            Next <ChevronRight size={16} />
           </button>
         </div>
       </div>
@@ -143,7 +192,7 @@ export function ChatSession(p: Props) {
       <div className="messages-list" aria-live="polite">
         {p.messages.length === 0 ? (
           <div className="empty-state">
-            <span>👋</span>
+            <span className="empty-wave">hey 👋</span>
             <p>Say hello to @{partner}!</p>
             <p className="empty-hint">Be kind and respectful.</p>
           </div>
@@ -158,19 +207,32 @@ export function ChatSession(p: Props) {
               <div className={`chat-bubble ${msg.fromSelf ? "self" : "other"}`}>
                 <span className="bubble-text">{msg.text}</span>
                 <span className="bubble-ts">
-                  {new Date(msg.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  {msg.fromSelf && <span className="bubble-check">✓</span>}
+                  {new Date(msg.ts).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {msg.fromSelf && <Check size={12} className="bubble-check" />}
                 </span>
               </div>
               {reactions[i] && reactions[i].length > 0 && (
-                <div className={`bubble-reactions ${msg.fromSelf ? "self" : "other"}`}>
+                <div
+                  className={`bubble-reactions ${msg.fromSelf ? "self" : "other"}`}
+                >
                   {reactions[i].map((e) => (
-                    <span key={e} className="bubble-reaction" onClick={() => toggleReaction(i, e)}>{e}</span>
+                    <span
+                      key={e}
+                      className="bubble-reaction"
+                      onClick={() => toggleReaction(i, e)}
+                    >
+                      {e}
+                    </span>
                   ))}
                 </div>
               )}
               {hoveredIdx === i && (
-                <div className={`bubble-react-bar ${msg.fromSelf ? "self" : "other"}`}>
+                <div
+                  className={`bubble-react-bar ${msg.fromSelf ? "self" : "other"}`}
+                >
                   {["👍", "❤️", "😂", "😮", "😢"].map((e) => (
                     <button
                       key={e}
@@ -189,7 +251,9 @@ export function ChatSession(p: Props) {
         {p.partnerTyping && (
           <div className="bubble-wrap other">
             <div className="chat-bubble other typing-bubble">
-              <span /><span /><span />
+              <span />
+              <span />
+              <span />
             </div>
           </div>
         )}
@@ -203,7 +267,10 @@ export function ChatSession(p: Props) {
               key={e}
               type="button"
               className="emoji-pick-btn"
-              onClick={() => { setDraft((d) => d + e); inputRef.current?.focus(); }}
+              onClick={() => {
+                setDraft((d) => d + e);
+                inputRef.current?.focus();
+              }}
             >
               {e}
             </button>
@@ -219,7 +286,7 @@ export function ChatSession(p: Props) {
           onClick={() => setShowEmoji((v) => !v)}
           title="Emoji"
         >
-          <Smile size={18} />
+          <Smile size={20} />
         </button>
         <div className="composer-input-wrap">
           <input
@@ -233,11 +300,16 @@ export function ChatSession(p: Props) {
             }}
             placeholder="Send a message…"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
             }}
           />
           {draft.length > MAX_CHARS * 0.8 && (
-            <span className={`char-counter ${charsLeft < 20 ? "warn" : ""}`}>{charsLeft}</span>
+            <span className={`char-counter ${charsLeft < 20 ? "warn" : ""}`}>
+              {charsLeft}
+            </span>
           )}
         </div>
         <button
@@ -247,7 +319,7 @@ export function ChatSession(p: Props) {
           disabled={!draft.trim() || draft.length > MAX_CHARS}
           aria-label="Send"
         >
-          <Send size={16} />
+          <Send size={18} />
         </button>
       </div>
     </section>

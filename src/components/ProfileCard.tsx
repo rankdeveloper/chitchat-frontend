@@ -1,24 +1,24 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from "react";
 
 export type UserProfile = {
-  publicId: string
-  displayName: string
-  gender: string
-  country: string
-  interests: string[]
-  interestsOn: boolean
-  avatarHue: number
-  bannerStyle: 'simple' | 'gradient'
-  joinDate: string
-}
+  publicId: string;
+  displayName: string;
+  gender: string;
+  country: string;
+  interests: string[];
+  interestsOn: boolean;
+  avatarHue: number;
+  bannerStyle: "simple" | "gradient";
+  joinDate: string;
+};
 
 type Props = {
-  open: boolean
-  profile: UserProfile
-  onClose: () => void
-  onEditProfile: () => void
-  avatar: ReactNode
-}
+  open: boolean;
+  profile: UserProfile;
+  onClose: () => void;
+  onEditProfile: () => void;
+  avatar: ReactNode;
+};
 
 export function ProfileCard({
   open,
@@ -27,7 +27,7 @@ export function ProfileCard({
   onEditProfile,
   avatar,
 }: Props) {
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
@@ -39,13 +39,13 @@ export function ProfileCard({
       >
         <div
           className={`profile-banner ${
-            profile.bannerStyle === 'gradient' ? 'gradient' : 'simple'
+            profile.bannerStyle === "gradient" ? "gradient" : "simple"
           }`}
         />
         <div className="profile-card-body">
           <div className="profile-avatar-wrap">{avatar}</div>
           <h2 className="profile-name">
-            {profile.displayName.trim() || 'Guest'}
+            {profile.displayName.trim() || "Guest"}
           </h2>
           <p className="profile-id">ID: {profile.publicId}</p>
           <button
@@ -58,10 +58,8 @@ export function ProfileCard({
 
           <div className="profile-info-box">
             <div className="profile-field">
-              <span className="profile-label">Chitchat join date</span>
-              <span className="profile-value">
-                {profile.joinDate || '—'}
-              </span>
+              <span className="profile-label">Meetora join date</span>
+              <span className="profile-value">{profile.joinDate || "—"}</span>
             </div>
             <div className="profile-field">
               <span className="profile-label">Interests</span>
@@ -81,5 +79,5 @@ export function ProfileCard({
         </div>
       </div>
     </div>
-  )
+  );
 }

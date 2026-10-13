@@ -1,3 +1,4 @@
+import { useId } from "react";
 import {
   ArrowRight,
   EyeOff,
@@ -17,20 +18,32 @@ type Props = {
   onVideoChat?: () => void;
 };
 
-function Sparkle({ style }: { style: React.CSSProperties }) {
+export function Logo({ size = 40 }: { size?: number }) {
+  const id = "cc" + useId().replace(/:/g, "");
   return (
     <svg
-      className="lp-sparkle"
-      viewBox="0 0 24 24"
-      style={style}
+      viewBox="0 0 40 40"
+      width={size}
+      height={size}
       aria-hidden="true"
+      className="cc-logo"
     >
-      <path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" />
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8b6cf6" />
+          <stop offset="1" stopColor="#5b3fe0" />
+        </linearGradient>
+      </defs>
+      <path d="M7 15 L9 3 L18 9Z M33 15 L31 3 L22 9Z" fill="#5b3fe0" />
+      <circle cx="20" cy="22" r="16" fill={`url(#${id})`} />
+      <rect x="8" y="17" width="24" height="10" rx="5" fill="#fff" />
+      <ellipse cx="14.5" cy="22" rx="3" ry="2.6" fill="#2b1b6b" />
+      <ellipse cx="25.5" cy="22" rx="3" ry="2.6" fill="#2b1b6b" />
     </svg>
   );
 }
 
-const SPARKLES: React.CSSProperties[] = [
+const DEFAULT_SPARKLES: React.CSSProperties[] = [
   { top: "14%", left: "6%", width: 38, opacity: 0.55 },
   { top: "8%", left: "40%", width: 14, opacity: 0.5 },
   { top: "44%", left: "44%", width: 18, opacity: 0.35 },
@@ -40,31 +53,30 @@ const SPARKLES: React.CSSProperties[] = [
   { bottom: "26%", left: "3%", width: 10, opacity: 0.3 },
 ];
 
-function Sparkles() {
+export function Sparkles({
+  items = DEFAULT_SPARKLES,
+}: {
+  items?: React.CSSProperties[];
+}) {
   return (
     <>
-      {SPARKLES.map((s, i) => (
-        <Sparkle key={i} style={s} />
+      {items.map((style, i) => (
+        <svg
+          key={i}
+          className="cc-sparkle"
+          viewBox="0 0 24 24"
+          style={{
+            position: "absolute",
+            pointerEvents: "none",
+            fill: "#6d5fe0",
+            ...style,
+          }}
+          aria-hidden="true"
+        >
+          <path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" />
+        </svg>
       ))}
     </>
-  );
-}
-
-function Logo() {
-  return (
-    <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
-      <defs>
-        <linearGradient id="lpLogo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#8b6cf6" />
-          <stop offset="1" stopColor="#5b3fe0" />
-        </linearGradient>
-      </defs>
-      <path d="M7 15 L9 3 L18 9Z M33 15 L31 3 L22 9Z" fill="#5b3fe0" />
-      <circle cx="20" cy="22" r="16" fill="url(#lpLogo)" />
-      <rect x="8" y="17" width="24" height="10" rx="5" fill="#fff" />
-      <ellipse cx="14.5" cy="22" rx="3" ry="2.6" fill="#2b1b6b" />
-      <ellipse cx="25.5" cy="22" rx="3" ry="2.6" fill="#2b1b6b" />
-    </svg>
   );
 }
 
@@ -202,7 +214,7 @@ export function LandingPage(p: Props) {
       <header className="lp-nav">
         <a href="#top" className="lp-logo">
           <Logo />
-          Chitchat
+          Meetora
         </a>
         <nav className="lp-pills" aria-label="Main">
           <a href="#top" className="lp-pill is-active">
@@ -507,7 +519,7 @@ export function LandingPage(p: Props) {
       </main>
 
       <footer className="lp-footer">
-        <span>&copy; {new Date().getFullYear()} Chitchat</span>
+        <span>&copy; {new Date().getFullYear()} Meetora</span>
         <nav>
           <a href="#terms">Terms</a>
           <a href="#privacy">Privacy</a>

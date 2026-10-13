@@ -1,92 +1,161 @@
-import type { FriendRow, PendingRequest } from '../types'
-import { Avatar } from './Avatar'
+import {
+  Check,
+  MessageSquare,
+  UserMinus,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import type { FriendRow, PendingRequest } from "../types";
+import { Avatar } from "./Avatar";
 
 type Props = {
-  friends: FriendRow[]
-  pendingRequests: PendingRequest[]
-  onOpen: (f: FriendRow) => void
-  onRemove: (id: string) => void
-  onAccept: (fromPublicId: string) => void
-  onDecline: (fromPublicId: string) => void
-}
+  friends: FriendRow[];
+  pendingRequests: PendingRequest[];
+  onOpen: (f: FriendRow) => void;
+  onRemove: (id: string) => void;
+  onAccept: (fromPublicId: string) => void;
+  onDecline: (fromPublicId: string) => void;
+};
 
-export function FriendsPanel({ friends, pendingRequests, onOpen, onRemove, onAccept, onDecline }: Props) {
+export function FriendsPanel({
+  friends,
+  pendingRequests,
+  onOpen,
+  onRemove,
+  onAccept,
+  onDecline,
+}: Props) {
+  const onlineCount = friends.filter((f) => f.online).length;
+
   return (
-    <section className="friends-panel">
-      <header className="main-top">
+    <section className="fp">
+      <header className="fp-head">
+        <span className="fp-head-icon">
+          <Users size={22} />
+        </span>
         <h1>Friends</h1>
+        <span className="fp-count">{friends.length}</span>
+        {onlineCount > 0 && (
+          <span className="fp-online">
+            <span className="fp-dot online" />
+            {onlineCount} online
+          </span>
+        )}
       </header>
 
-      {pendingRequests.length > 0 && (
-        <div className="pending-section">
-          <p className="pending-heading">Pending requests ({pendingRequests.length})</p>
-          <ul className="friends-list">
-            {pendingRequests.map((req) => (
-              <li key={req.fromPublicId} className="friend-row">
-                <div className="friend-open">
-                  <Avatar name={req.fromDisplayName} hue={220} size={36} />
-                  <div>
-                    <strong>{req.fromDisplayName}</strong>
-                    <div className="muted tiny">Wants to be your friend</div>
+      <div className="fp-scroll">
+        {pendingRequests.length > 0 && (
+          <div className="fp-block">
+            <h2 className="fp-sub">
+              <UserPlus size={18} />
+              Pending requests
+              <span className="fp-badge">{pendingRequests.length}</span>
+            </h2>
+            <ul className="fp-list">
+              {pendingRequests.map((req) => (
+                <li key={req.fromPublicId} className="fp-row fp-row-pending">
+                  <div className="fp-open fp-static">
+                    <Avatar name={req.fromDisplayName} hue={220} size={48} />
+                    <div className="fp-text">
+                      <strong>{req.fromDisplayName}</strong>
+                      <span>Wants to be your friend</span>
+                    </div>
                   </div>
-                </div>
-                <div className="pending-actions">
-                  <button
-                    type="button"
-                    className="accept-btn"
-                    onClick={() => onAccept(req.fromPublicId)}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost-btn"
-                    onClick={() => onDecline(req.fromPublicId)}
-                  >
-                    Decline
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <p className="muted" style={{ fontSize: '0.82rem' }}>
-        {friends.length === 0
-          ? 'No friends yet. Add friends during a random chat.'
-          : 'Click a friend to open their DM.'}
-      </p>
-      <ul className="friends-list">
-        {friends.length === 0 && (
-          <li className="muted">
-            No friends yet. Use Add friend during a random chat.
-          </li>
+                  <div className="fp-actions">
+                    <button
+                      type="button"
+                      className="fp-pill fp-accept"
+                      onClick={() => onAccept(req.fromPublicId)}
+                    >
+                      <Check size={16} />
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      className="fp-pill fp-decline"
+                      onClick={() => onDecline(req.fromPublicId)}
+                      aria-label={`Decline request from ${req.fromDisplayName}`}
+                    >
+                      <X size={16} />
+                      Decline
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
-        {friends.map((f) => (
-          <li key={f.publicId} className="friend-row">
-            <button type="button" className="friend-open" onClick={() => onOpen(f)}>
-              <div className="avatar-wrap">
-                <Avatar name={f.displayName} hue={f.avatarHue ?? 220} size={36} />
-                <span className={`presence-dot ${f.online ? 'online' : 'offline'}`} />
-              </div>
-              <div>
-                <strong>{f.displayName}</strong>
-                <div className="muted tiny">
-                  {f.online ? '● Online' : '○ Offline'} · {f.lastText || 'No messages yet'}
-                </div>
-              </div>
-            </button>
-            <button
-              type="button"
-              className="ghost-btn"
-              onClick={() => onRemove(f.publicId)}
-            >
-              Remove
-            </button>
-          </li>
-        ))}
-      </ul>
+
+        <div className="fp-block">
+          <h2 className="fp-sub">
+            <Users size={18} />
+            Your friends
+          </h2>
+
+          {friends.length === 0 ? (
+            <div className="fp-empty">
+              <span className="fp-empty-icon">
+                <Users size={34} />
+              </span>
+              <h3>No friends yet</h3>
+              <p>
+                Start a random chat and tap Add friend when you click with
+                someone.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="fp-hint">
+                Click a friend to open your direct messages.
+              </p>
+              <ul className="fp-list">
+                {friends.map((f) => (
+                  <li key={f.publicId} className="fp-row">
+                    <button
+                      type="button"
+                      className="fp-open"
+                      onClick={() => onOpen(f)}
+                    >
+                      <div className="fp-avatar">
+                        <Avatar
+                          name={f.displayName}
+                          hue={f.avatarHue ?? 220}
+                          size={48}
+                        />
+                        <span
+                          className={`fp-dot ${f.online ? "online" : "offline"}`}
+                        />
+                      </div>
+                      <div className="fp-text">
+                        <strong>{f.displayName}</strong>
+                        <span className={f.online ? "fp-status-on" : ""}>
+                          {f.online ? "Online" : "Offline"}
+                        </span>
+                        <em>{f.lastText || "No messages yet"}</em>
+                      </div>
+                      <MessageSquare
+                        size={20}
+                        className="fp-go"
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      className="fp-icon-btn"
+                      onClick={() => onRemove(f.publicId)}
+                      title="Remove friend"
+                      aria-label={`Remove ${f.displayName}`}
+                    >
+                      <UserMinus size={18} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </div>
     </section>
-  )
+  );
 }
