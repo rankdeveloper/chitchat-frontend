@@ -42,12 +42,18 @@ export default function App() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [onlineCount, setOnlineCount] = useState(1);
   const notifBtnRef = useRef<HTMLDivElement>(null);
-  const [notifPos, setNotifPos] = useState<{ top: number; right: number } | null>(null);
+  const [notifPos, setNotifPos] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
 
   useEffect(() => {
     if (notifOpen && notifBtnRef.current) {
       const rect = notifBtnRef.current.getBoundingClientRect();
-      setNotifPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+      setNotifPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
     }
   }, [notifOpen]);
 
@@ -155,6 +161,7 @@ export default function App() {
     }
     return (
       <NewChat
+        onlineCount={onlineCount}
         interests={profile.interests}
         interestsOn={profile.interestsOn}
         gender={profile.gender}
@@ -206,7 +213,11 @@ export default function App() {
                 onClick={openProfile}
                 title="Your profile"
               >
-                <Avatar name={profile.displayName || "Guest"} hue={profile.avatarHue} size={26} />
+                <Avatar
+                  name={profile.displayName || "Guest"}
+                  hue={profile.avatarHue}
+                  size={26}
+                />
               </button>
               <div className="online-count" title="Users online">
                 <Users size={14} />
@@ -222,53 +233,62 @@ export default function App() {
                 >
                   <Bell size={16} />
                   {chat.pendingRequests.length > 0 && (
-                    <span className="header-badge">{chat.pendingRequests.length}</span>
+                    <span className="header-badge">
+                      {chat.pendingRequests.length}
+                    </span>
                   )}
                 </button>
               </div>
-              {notifOpen && notifPos && createPortal(
-                <div
-                  className="notif-panel"
-                  style={{ position: "fixed", top: notifPos.top, right: notifPos.right }}
-                >
-                  <div className="notif-head">Notifications</div>
-                  {chat.pendingRequests.length === 0 ? (
-                    <p className="notif-empty">No new notifications.</p>
-                  ) : (
-                    <ul className="notif-list">
-                      {chat.pendingRequests.map((req) => (
-                        <li key={req.fromPublicId} className="notif-item">
-                          <div className="notif-text">
-                            <strong>{req.fromDisplayName}</strong> sent you a friend request
-                          </div>
-                          <div className="notif-actions">
-                            <button
-                              type="button"
-                              className="accept-btn"
-                              onClick={() => {
-                                chat.acceptFriendRequest(req.fromPublicId);
-                                setNotifOpen(false);
-                              }}
-                            >
-                              Accept
-                            </button>
-                            <button
-                              type="button"
-                              className="ghost-btn"
-                              onClick={() => {
-                                chat.declineFriendRequest(req.fromPublicId);
-                              }}
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>,
-                document.body
-              )}
+              {notifOpen &&
+                notifPos &&
+                createPortal(
+                  <div
+                    className="notif-panel"
+                    style={{
+                      position: "fixed",
+                      top: notifPos.top,
+                      right: notifPos.right,
+                    }}
+                  >
+                    <div className="notif-head">Notifications</div>
+                    {chat.pendingRequests.length === 0 ? (
+                      <p className="notif-empty">No new notifications.</p>
+                    ) : (
+                      <ul className="notif-list">
+                        {chat.pendingRequests.map((req) => (
+                          <li key={req.fromPublicId} className="notif-item">
+                            <div className="notif-text">
+                              <strong>{req.fromDisplayName}</strong> sent you a
+                              friend request
+                            </div>
+                            <div className="notif-actions">
+                              <button
+                                type="button"
+                                className="accept-btn"
+                                onClick={() => {
+                                  chat.acceptFriendRequest(req.fromPublicId);
+                                  setNotifOpen(false);
+                                }}
+                              >
+                                Accept
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-btn"
+                                onClick={() => {
+                                  chat.declineFriendRequest(req.fromPublicId);
+                                }}
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>,
+                  document.body,
+                )}
             </div>
             <button
               type="button"
