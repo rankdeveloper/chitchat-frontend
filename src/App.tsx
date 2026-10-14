@@ -48,12 +48,12 @@ export default function App() {
   const [authChoiceOpen, setAuthChoiceOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const [userId, setUserId] = useState(loadOrCreateUserId);
-  // True once the user has chosen guest / signed in, so the text page's Start
-  // button goes straight into matching instead of re-showing the auth modal.
+
   const [authGatePassed, setAuthGatePassed] = useState(hasPassedAuthGate);
   const [authProvider, setAuthProvider] = useState(loadAuthProvider);
   const [googleEmail, setGoogleEmail] = useState(loadGoogleEmail);
   const { toast, showToast } = useToast();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const profile = useProfile(socketRef, showToast);
   const chat = useChitchat({
@@ -138,7 +138,7 @@ export default function App() {
 
   const completeGoogleSignIn = async (credential: string) => {
     try {
-      const res = await fetch("/auth/google", {
+      const res = await fetch(`${API_URL}/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credential }),
