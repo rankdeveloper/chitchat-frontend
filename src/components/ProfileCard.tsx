@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CalendarDays, Hash, Pencil, Sparkles, X } from "lucide-react";
 
 export type UserProfile = {
   publicId: string;
@@ -32,43 +33,57 @@ export function ProfileCard({
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
-        className="profile-card"
+        className="pc"
         role="dialog"
         aria-label="Your profile"
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className={`profile-banner ${
+          className={`pc-banner ${
             profile.bannerStyle === "gradient" ? "gradient" : "simple"
           }`}
-        />
-        <div className="profile-card-body">
-          <div className="profile-avatar-wrap">{avatar}</div>
-          <h2 className="profile-name">
-            {profile.displayName.trim() || "Guest"}
-          </h2>
-          <p className="profile-id">ID: {profile.publicId}</p>
+        >
           <button
             type="button"
-            className="profile-edit-btn"
-            onClick={onEditProfile}
+            className="pc-close"
+            onClick={onClose}
+            aria-label="Close profile"
           >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="pc-body">
+          <div className="pc-avatar">{avatar}</div>
+          <h2 className="pc-name">{profile.displayName.trim() || "Guest"}</h2>
+          <p className="pc-id">
+            <Hash size={14} />
+            {profile.publicId}
+          </p>
+          <button type="button" className="pc-edit" onClick={onEditProfile}>
+            <Pencil size={16} />
             Edit Profile
           </button>
 
-          <div className="profile-info-box">
-            <div className="profile-field">
-              <span className="profile-label">Meetora join date</span>
-              <span className="profile-value">{profile.joinDate || "—"}</span>
+          <div className="pc-info">
+            <div className="pc-field">
+              <span className="pc-label">
+                <CalendarDays size={16} />
+                Chitchat join date
+              </span>
+              <span className="pc-value">{profile.joinDate || "—"}</span>
             </div>
-            <div className="profile-field">
-              <span className="profile-label">Interests</span>
-              <div className="profile-interest-chips">
+            <div className="pc-field">
+              <span className="pc-label">
+                <Sparkles size={16} />
+                Interests
+              </span>
+              <div className="pc-chips">
                 {profile.interests.length === 0 ? (
-                  <span className="interest-chip muted-chip">No interests</span>
+                  <span className="pc-chip muted">No interests</span>
                 ) : (
                   profile.interests.map((tag) => (
-                    <span key={tag} className="interest-chip selected">
+                    <span key={tag} className="pc-chip">
                       {tag}
                     </span>
                   ))

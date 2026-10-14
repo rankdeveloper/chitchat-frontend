@@ -1,17 +1,17 @@
-type Props = { name: string; hue?: number; size?: number }
+type Props = { name: string; hue?: number; size?: number };
 
 export function Avatar({ name, hue = 220, size = 36 }: Props) {
   const initials = name
     .trim()
     .split(/\s+/)
     .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('')
-  const fontSize = Math.round(size * 0.38)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+  const fontSize = Math.round(size * 0.38);
 
   return (
     <div
-      className="avatar"
+      className="avatar "
       style={{
         width: size,
         height: size,
@@ -22,7 +22,7 @@ export function Avatar({ name, hue = 220, size = 36 }: Props) {
       aria-hidden="true"
       title={name}
     >
-      {initials || '?'}
+      {initials || "?"}
     </div>
-  )
+  );
 }

@@ -8,6 +8,8 @@
   flex-shrink: 0;
   user-select: none;
   font-size: inherit;
+  position: relative;
+  z-index: 2;
 }
 
 /* ─── Modal backdrop ─── */
