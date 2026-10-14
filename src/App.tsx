@@ -15,15 +15,28 @@ import { LandingPage } from "./components/LandingPage";
 import { useChitchat } from "./hooks/useChitchat";
 import { useProfile } from "./hooks/useProfile";
 import { useToast } from "./hooks/useToast";
-import { loadOrCreateUserId } from "./lib/storage";
+import {
+  KEYS,
+  loadOrCreateUserId,
+  readStoredBlockedUsers,
+  readStoredBoolean,
+} from "./lib/storage";
 import "./App.css";
 import "./profile.css";
 import "./landing-v2.css";
 
+const makeBlockedUser = (targetPublicId: string, displayName?: string) => ({
+  publicId: targetPublicId,
+  displayName: displayName || "Blocked user",
+  blockedAt: Date.now(),
+});
+
 export default function App() {
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(
+    () => window.location.pathname !== "/text",
+  );
   const socketRef = useRef<Socket | null>(null);
-  const userId = useMemo(loadOrCreateUserId, []);
+  const userId = useMemo(() => loadOrCreateUserId(), []);
   const { toast, showToast } = useToast();
 
   const profile = useProfile(socketRef, showToast);
@@ -41,11 +54,66 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [onlineCount, setOnlineCount] = useState(1);
+  const [blockedUsers, setBlockedUsers] = useState(readStoredBlockedUsers);
+  const [typingSoundEnabled, setTypingSoundEnabled] = useState(() =>
+    readStoredBoolean(KEYS.typingSound, true),
+  );
+  const [notifSoundEnabled, setNotifSoundEnabled] = useState(() =>
+    readStoredBoolean(KEYS.notifSound, true),
+  );
   const notifBtnRef = useRef<HTMLDivElement>(null);
   const [notifPos, setNotifPos] = useState<{
     top: number;
     right: number;
   } | null>(null);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setShowLanding(window.location.pathname !== "/text");
+    };
+
+    window.addEventListener("popstate", handleRouteChange);
+    return () => window.removeEventListener("popstate", handleRouteChange);
+  }, []);
+
+  const navigateTo = (path: string) => {
+    const isSame = window.location.pathname === path;
+    if (!isSame) {
+      window.history.pushState({}, "", path);
+    }
+    setShowLanding(path !== "/text");
+  };
+
+  const handleBlockUser = (targetPublicId: string, displayName?: string) => {
+    const nextBlocked = makeBlockedUser(targetPublicId, displayName);
+    setBlockedUsers((prev) => {
+      if (prev.some((user) => user.publicId === targetPublicId)) return prev;
+      return [nextBlocked, ...prev];
+    });
+    chat.blockUser(targetPublicId);
+  };
+
+  const handleUnblockUser = (publicId: string) => {
+    setBlockedUsers((prev) =>
+      prev.filter((user) => user.publicId !== publicId),
+    );
+  };
+
+  const toggleTypingSound = () => setTypingSoundEnabled((v) => !v);
+  const toggleNotifSound = () => setNotifSoundEnabled((v) => !v);
+  const handleTextChat = () => navigateTo("/text");
+
+  useEffect(() => {
+    localStorage.setItem(KEYS.blockedUsers, JSON.stringify(blockedUsers));
+  }, [blockedUsers]);
+
+  useEffect(() => {
+    localStorage.setItem(KEYS.typingSound, String(typingSoundEnabled));
+  }, [typingSoundEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem(KEYS.notifSound, String(notifSoundEnabled));
+  }, [notifSoundEnabled]);
 
   useEffect(() => {
     if (notifOpen && notifBtnRef.current) {
@@ -58,11 +126,12 @@ export default function App() {
   }, [notifOpen]);
 
   useEffect(() => {
-    if (!socketRef.current) return;
+    const socket = socketRef.current;
+    if (!socket) return;
     const handleOnlineCount = (count: number) => setOnlineCount(count);
-    socketRef.current.on("online_count", handleOnlineCount);
+    socket.on("online_count", handleOnlineCount);
     return () => {
-      socketRef.current?.off("online_count", handleOnlineCount);
+      socket.off("online_count", handleOnlineCount);
     };
   }, []);
 
@@ -82,6 +151,7 @@ export default function App() {
     setSettingsOpen(false);
     setNotifOpen(false);
   };
+
   const openSettings = () => {
     setSettingsOpen(true);
     setProfileCardOpen(false);
@@ -89,7 +159,7 @@ export default function App() {
   };
 
   if (showLanding) {
-    return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+    return <LandingPage onGetStarted={handleTextChat} />;
   }
 
   const inSession = chat.phase === "searching" || chat.phase === "chatting";
@@ -116,11 +186,14 @@ export default function App() {
           onMarkRead={chat.markDmRead}
           onReact={chat.reactToMessage}
           onUnfriend={() => chat.removeFriend(activeFriend.publicId)}
-          onBlock={() => chat.blockUser(activeFriend.publicId)}
+          onBlock={() =>
+            handleBlockUser(activeFriend.publicId, activeFriend.displayName)
+          }
           onReport={() => chat.reportUser(activeFriend.publicId)}
         />
       );
     }
+
     if (inSession) {
       return (
         <ChatSession
@@ -136,7 +209,11 @@ export default function App() {
           onCancel={chat.cancelSearch}
           onSendFriendRequest={chat.sendFriendRequest}
           onBlock={() =>
-            chat.partnerPublicId && chat.blockUser(chat.partnerPublicId)
+            chat.partnerPublicId &&
+            handleBlockUser(
+              chat.partnerPublicId,
+              chat.partnerLabel || "Stranger",
+            )
           }
           onReport={() =>
             chat.partnerPublicId && chat.reportUser(chat.partnerPublicId)
@@ -144,6 +221,7 @@ export default function App() {
         />
       );
     }
+
     if (chat.nav === "friends") {
       return (
         <FriendsPanel
@@ -159,6 +237,7 @@ export default function App() {
         />
       );
     }
+
     return (
       <NewChat
         onlineCount={onlineCount}
@@ -307,7 +386,6 @@ export default function App() {
           {renderMain()}
         </main>
 
-        {/* Toast */}
         {toast && <div className="global-toast">{toast}</div>}
 
         <ProfileCard
@@ -344,6 +422,9 @@ export default function App() {
             interests={profile.interests}
             interestsOn={profile.interestsOn}
             nameChangesLeft={profile.nameChangesLeft}
+            blockedUsers={blockedUsers}
+            typingSoundEnabled={typingSoundEnabled}
+            notifSoundEnabled={notifSoundEnabled}
             onClose={() => setSettingsOpen(false)}
             onCycleAvatar={profile.cycleAvatar}
             onResetAvatar={profile.resetAvatar}
@@ -352,6 +433,9 @@ export default function App() {
             onCommitName={profile.commitUsername}
             onGenderChange={profile.changeGender}
             onCountryChange={profile.changeCountry}
+            onToggleTypingSound={toggleTypingSound}
+            onToggleNotifSound={toggleNotifSound}
+            onUnblockUser={handleUnblockUser}
           />
         )}
       </div>

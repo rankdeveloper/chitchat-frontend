@@ -97,7 +97,7 @@ export function DmSession(p: Props) {
               hue={p.friend.avatarHue ?? 220}
               size={44}
             />
-            <span className={`dx-dot ${status}`} />
+            {/* <span className={`dx-dot ${status}`} /> */}
           </div>
           <div className="dx-name">
             <h1>@{p.friend.displayName}</h1>

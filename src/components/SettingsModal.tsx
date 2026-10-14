@@ -37,6 +37,13 @@ type Props = {
   interests: string[];
   interestsOn: boolean;
   nameChangesLeft: number;
+  blockedUsers: Array<{
+    publicId: string;
+    displayName: string;
+    blockedAt: number;
+  }>;
+  typingSoundEnabled: boolean;
+  notifSoundEnabled: boolean;
   onClose: () => void;
   onCycleAvatar: () => void;
   onResetAvatar: () => void;
@@ -45,6 +52,9 @@ type Props = {
   onCommitName: (name: string) => boolean;
   onGenderChange: (value: string) => void;
   onCountryChange: (value: string) => void;
+  onToggleTypingSound: () => void;
+  onToggleNotifSound: () => void;
+  onUnblockUser?: (publicId: string) => void;
 };
 
 const TAB_ICONS: Record<string, LucideIcon> = {
@@ -64,22 +74,14 @@ export function SettingsModal(p: Props) {
   const [tab, setTab] = useState<SettingsTab>("profile");
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
-  const [typingSound, setTypingSound] = useState(
-    () => localStorage.getItem("cc_typing_sound") !== "false",
-  );
-  const [notifSound, setNotifSound] = useState(
-    () => localStorage.getItem("cc_notif_sound") !== "false",
-  );
   const name = p.displayName.trim() || "Guest";
 
-  const handleTypingSoundChange = (val: boolean) => {
-    setTypingSound(val);
-    localStorage.setItem("cc_typing_sound", String(val));
+  const handleTypingSoundChange = () => {
+    p.onToggleTypingSound();
   };
 
-  const handleNotifSoundChange = (val: boolean) => {
-    setNotifSound(val);
-    localStorage.setItem("cc_notif_sound", String(val));
+  const handleNotifSoundChange = () => {
+    p.onToggleNotifSound();
   };
 
   return (
@@ -338,10 +340,10 @@ export function SettingsModal(p: Props) {
                   </div>
                   <button
                     type="button"
-                    className={`toggle-switch ${typingSound ? "on" : ""}`}
-                    onClick={() => handleTypingSoundChange(!typingSound)}
+                    className={`toggle-switch ${p.typingSoundEnabled ? "on" : ""}`}
+                    onClick={handleTypingSoundChange}
                     aria-label="Toggle typing sound"
-                    aria-pressed={typingSound}
+                    aria-pressed={p.typingSoundEnabled}
                   >
                     <span className="toggle-knob" />
                   </button>
@@ -358,10 +360,10 @@ export function SettingsModal(p: Props) {
                   </div>
                   <button
                     type="button"
-                    className={`toggle-switch ${notifSound ? "on" : ""}`}
-                    onClick={() => handleNotifSoundChange(!notifSound)}
+                    className={`toggle-switch ${p.notifSoundEnabled ? "on" : ""}`}
+                    onClick={handleNotifSoundChange}
                     aria-label="Toggle notification sound"
-                    aria-pressed={notifSound}
+                    aria-pressed={p.notifSoundEnabled}
                   >
                     <span className="toggle-knob" />
                   </button>
@@ -371,11 +373,57 @@ export function SettingsModal(p: Props) {
 
             {tab === "blocked" && (
               <div className="settings-empty">
-                <span className="settings-icon-tile large">
-                  <ShieldCheck size={30} />
-                </span>
-                <strong>No blocked users</strong>
-                <p className="muted">You haven't blocked anyone yet.</p>
+                {p.blockedUsers.length === 0 ? (
+                  <>
+                    <span className="settings-icon-tile large">
+                      <ShieldCheck size={30} />
+                    </span>
+                    <strong>No blocked users</strong>
+                    <p className="muted">You haven't blocked anyone yet.</p>
+                  </>
+                ) : (
+                  <div className="blocked-list" style={{ width: "100%" }}>
+                    {p.blockedUsers.map((user) => (
+                      <div
+                        key={user.publicId}
+                        className="blocked-item"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          padding: "10px 12px",
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.04)",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 600 }}>
+                            {user.displayName}
+                          </div>
+                          <div className="muted tiny">
+                            Blocked{" "}
+                            {new Date(user.blockedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        {p.onUnblockUser && (
+                          <button
+                            type="button"
+                            className="ghost-btn"
+                            onClick={() => {
+                              if (p.onUnblockUser) {
+                                p.onUnblockUser(user.publicId);
+                              }
+                            }}
+                          >
+                            Unblock
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
