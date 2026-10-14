@@ -69,7 +69,7 @@ export function ProfileCard({
             <div className="pc-field">
               <span className="pc-label">
                 <CalendarDays size={16} />
-                Chitchat join date
+                Meetora join date
               </span>
               <span className="pc-value">{profile.joinDate || "—"}</span>
             </div>

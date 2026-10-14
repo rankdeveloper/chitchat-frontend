@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bell, Settings, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 import { ProfileCard } from "./components/ProfileCard";
 import { Avatar } from "./components/Avatar";
@@ -11,6 +11,7 @@ import { NewChat } from "./components/NewChat";
 import { SettingsModal } from "./components/SettingsModal";
 import { Sidebar } from "./components/Sidebar";
 import { AgeGateModal } from "./components/AgeGateModal";
+import { AuthChoiceModal } from "./components/AuthChoiceModal";
 import { LandingPage } from "./components/LandingPage";
 import { useChitchat } from "./hooks/useChitchat";
 import { useProfile } from "./hooks/useProfile";
@@ -35,6 +36,7 @@ export default function App() {
   const [showLanding, setShowLanding] = useState(
     () => window.location.pathname !== "/text",
   );
+  const [authChoiceOpen, setAuthChoiceOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const userId = useMemo(() => loadOrCreateUserId(), []);
   const { toast, showToast } = useToast();
@@ -82,6 +84,7 @@ export default function App() {
       window.history.pushState({}, "", path);
     }
     setShowLanding(path !== "/text");
+    setAuthChoiceOpen(false);
   };
 
   const handleBlockUser = (targetPublicId: string, displayName?: string) => {
@@ -101,7 +104,35 @@ export default function App() {
 
   const toggleTypingSound = () => setTypingSoundEnabled((v) => !v);
   const toggleNotifSound = () => setNotifSoundEnabled((v) => !v);
-  const handleTextChat = () => navigateTo("/text");
+  const handleTextChat = () => {
+    navigateTo("/text");
+  };
+
+  const handleGuestContinue = () => {
+    setAuthChoiceOpen(false);
+
+    if (showLanding) {
+      navigateTo("/text");
+      return;
+    }
+
+    chat.startChat({ gender: filterGender, country: filterCountry });
+  };
+
+  const handleAuthProvider = (provider: "google" | "apple") => {
+    setAuthChoiceOpen(false);
+    if (provider === "google") {
+      showToast("Google sign-in is coming soon.");
+    } else {
+      showToast("Apple sign-in is coming soon.");
+    }
+
+    if (!showLanding) {
+      chat.startChat({ gender: filterGender, country: filterCountry });
+    } else {
+      navigateTo("/text");
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem(KEYS.blockedUsers, JSON.stringify(blockedUsers));
@@ -141,6 +172,7 @@ export default function App() {
       setProfileCardOpen(false);
       setSettingsOpen(false);
       setNotifOpen(false);
+      setAuthChoiceOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -159,7 +191,18 @@ export default function App() {
   };
 
   if (showLanding) {
-    return <LandingPage onGetStarted={handleTextChat} />;
+    return (
+      <>
+        <LandingPage onGetStarted={handleTextChat} />
+        <AuthChoiceModal
+          open={authChoiceOpen}
+          onClose={() => setAuthChoiceOpen(false)}
+          onGuestContinue={handleGuestContinue}
+          onGoogle={() => handleAuthProvider("google")}
+          onApple={() => handleAuthProvider("apple")}
+        />
+      </>
+    );
   }
 
   const inSession = chat.phase === "searching" || chat.phase === "chatting";
@@ -253,9 +296,9 @@ export default function App() {
         onGenderChange={profile.changeGender}
         onFilterGender={setFilterGender}
         onFilterCountry={setFilterCountry}
-        onStart={() =>
-          chat.startChat({ gender: filterGender, country: filterCountry })
-        }
+        onStart={() => {
+          setAuthChoiceOpen(true);
+        }}
       />
     );
   };
@@ -438,6 +481,14 @@ export default function App() {
             onUnblockUser={handleUnblockUser}
           />
         )}
+
+        <AuthChoiceModal
+          open={authChoiceOpen}
+          onClose={() => setAuthChoiceOpen(false)}
+          onGuestContinue={handleGuestContinue}
+          onGoogle={() => handleAuthProvider("google")}
+          onApple={() => handleAuthProvider("apple")}
+        />
       </div>
     </>
   );

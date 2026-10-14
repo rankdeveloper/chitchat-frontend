@@ -263,7 +263,11 @@ export function NewChat(p: Props) {
         <button
           type="button"
           className="start-chat-btn"
-          onClick={p.onStart}
+          onClick={() => {
+            if (p.canStart && !p.busy) {
+              p.onStart();
+            }
+          }}
           disabled={!p.canStart || p.busy}
         >
           <MessageSquare size={22} />
