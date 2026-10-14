@@ -6,6 +6,7 @@ import {
   Check,
   Globe,
   KeyRound,
+  LogOut,
   Mars,
   Palette,
   Pencil,
@@ -55,6 +56,12 @@ type Props = {
   onToggleTypingSound: () => void;
   onToggleNotifSound: () => void;
   onUnblockUser?: (publicId: string) => void;
+  /** How the user is currently signed in: "guest" or "google". */
+  authProvider?: "guest" | "google";
+  /** Signed-in Google email, if any. */
+  googleEmail?: string;
+  /** Sign out and reset to a fresh guest identity. */
+  onSignOut?: () => void;
 };
 
 const TAB_ICONS: Record<string, LucideIcon> = {
@@ -74,7 +81,9 @@ export function SettingsModal(p: Props) {
   const [tab, setTab] = useState<SettingsTab>("profile");
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const name = p.displayName.trim() || "Guest";
+  const isGoogle = p.authProvider === "google";
 
   const handleTypingSoundChange = () => {
     p.onToggleTypingSound();
@@ -286,7 +295,11 @@ export function SettingsModal(p: Props) {
                     Account Info
                   </span>
                   <p className="muted">
-                    Your account is linked to your browser's local storage.
+                    {isGoogle
+                      ? `Signed in with Google${
+                          p.googleEmail ? ` as ${p.googleEmail}` : ""
+                        }.`
+                      : "You're browsing as a guest. Sign in with Google to keep the same identity across devices."}
                   </p>
                 </div>
                 <div className="settings-row">
@@ -299,6 +312,51 @@ export function SettingsModal(p: Props) {
                     when you chat.
                   </p>
                 </div>
+                {p.onSignOut && (
+                  <div className="settings-row">
+                    <span className="settings-label">
+                      <LogOut size={18} />
+                      Sign out
+                    </span>
+                    {confirmSignOut ? (
+                      <div className="name-edit">
+                        <button
+                          type="button"
+                          className="ghost-btn danger"
+                          onClick={() => {
+                            setConfirmSignOut(false);
+                            p.onSignOut?.();
+                          }}
+                        >
+                          <LogOut size={15} />
+                          Yes, sign out
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-btn"
+                          onClick={() => setConfirmSignOut(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="name-edit">
+                        <button
+                          type="button"
+                          className="ghost-btn"
+                          onClick={() => setConfirmSignOut(true)}
+                        >
+                          <LogOut size={15} />
+                          Sign out
+                        </button>
+                      </div>
+                    )}
+                    <p className="muted tiny">
+                      Resets this browser to a fresh guest. Your chats and
+                      friends on this device will be cleared.
+                    </p>
+                  </div>
+                )}
               </>
             )}
 

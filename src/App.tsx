@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { Bell, Settings, Users } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 import { ProfileCard } from "./components/ProfileCard";
 import { Avatar } from "./components/Avatar";
@@ -18,10 +18,19 @@ import { useProfile } from "./hooks/useProfile";
 import { useToast } from "./hooks/useToast";
 import {
   KEYS,
+  clearAuthGate,
+  clearGoogleAccount,
+  hasPassedAuthGate,
+  loadAuthProvider,
+  loadGoogleEmail,
   loadOrCreateUserId,
+  markAuthGatePassed,
   readStoredBlockedUsers,
   readStoredBoolean,
+  saveGoogleAccount,
+  saveUserId,
 } from "./lib/storage";
+import { generateName } from "./lib/profile";
 import "./App.css";
 import "./profile.css";
 import "./landing-v2.css";
@@ -38,7 +47,12 @@ export default function App() {
   );
   const [authChoiceOpen, setAuthChoiceOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
-  const userId = useMemo(() => loadOrCreateUserId(), []);
+  const [userId, setUserId] = useState(loadOrCreateUserId);
+  // True once the user has chosen guest / signed in, so the text page's Start
+  // button goes straight into matching instead of re-showing the auth modal.
+  const [authGatePassed, setAuthGatePassed] = useState(hasPassedAuthGate);
+  const [authProvider, setAuthProvider] = useState(loadAuthProvider);
+  const [googleEmail, setGoogleEmail] = useState(loadGoogleEmail);
   const { toast, showToast } = useToast();
 
   const profile = useProfile(socketRef, showToast);
@@ -110,6 +124,9 @@ export default function App() {
 
   const handleGuestContinue = () => {
     setAuthChoiceOpen(false);
+    markAuthGatePassed();
+    setAuthGatePassed(true);
+    setAuthProvider("guest");
 
     if (showLanding) {
       navigateTo("/text");
@@ -119,19 +136,94 @@ export default function App() {
     chat.startChat({ gender: filterGender, country: filterCountry });
   };
 
-  const handleAuthProvider = (provider: "google" | "apple") => {
-    setAuthChoiceOpen(false);
-    if (provider === "google") {
-      showToast("Google sign-in is coming soon.");
-    } else {
-      showToast("Apple sign-in is coming soon.");
-    }
+  const completeGoogleSignIn = async (credential: string) => {
+    try {
+      const res = await fetch("/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential }),
+      });
 
+      const data = (await res.json().catch(() => null)) as {
+        publicId?: string;
+        displayName?: string;
+        email?: string;
+        avatarUrl?: string;
+        error?: string;
+      } | null;
+
+      if (!res.ok || !data?.publicId) {
+        showToast(data?.error || "Google sign-in failed. Please try again.");
+        return;
+      }
+
+      saveUserId(data.publicId);
+      saveGoogleAccount({ email: data.email, avatarUrl: data.avatarUrl });
+      if (data.displayName) profile.adoptProviderName(data.displayName);
+      setUserId(data.publicId);
+      setAuthChoiceOpen(false);
+      markAuthGatePassed();
+      setAuthGatePassed(true);
+      setAuthProvider("google");
+      setGoogleEmail(data.email ?? "");
+      showToast(
+        `Signed in as ${data.displayName || data.email || "Google user"}`,
+      );
+
+      if (showLanding) {
+        navigateTo("/text");
+      } else {
+        chat.queueStartChat({ gender: filterGender, country: filterCountry });
+      }
+    } catch {
+      showToast("Could not reach the server for Google sign-in.");
+    }
+  };
+
+  const handleApple = () => {
+    setAuthChoiceOpen(false);
+    showToast("Apple sign-in is coming soon.");
+    markAuthGatePassed();
+    setAuthGatePassed(true);
     if (!showLanding) {
       chat.startChat({ gender: filterGender, country: filterCountry });
     } else {
       navigateTo("/text");
     }
+  };
+
+  const handleGoogleUnavailable = () => {
+    showToast("Google sign-in is unavailable right now. Please try again.");
+  };
+
+  const handleSignOut = () => {
+    clearAuthGate();
+    clearGoogleAccount();
+
+    const guestId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `guest_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    saveUserId(guestId);
+    const guestName = generateName();
+    localStorage.setItem(KEYS.displayName, guestName);
+
+    try {
+      sessionStorage.removeItem("cc_messages");
+      sessionStorage.removeItem("cc_partner_label");
+      sessionStorage.removeItem("cc_partner_id");
+      sessionStorage.removeItem("cc_phase");
+    } catch {
+      /* ignore */
+    }
+
+    setAuthGatePassed(false);
+    setAuthChoiceOpen(false);
+    setSettingsOpen(false);
+    showToast("Signed out.");
+
+    // Reload to the landing page for a clean slate.
+    window.location.assign("/");
   };
 
   useEffect(() => {
@@ -198,8 +290,9 @@ export default function App() {
           open={authChoiceOpen}
           onClose={() => setAuthChoiceOpen(false)}
           onGuestContinue={handleGuestContinue}
-          onGoogle={() => handleAuthProvider("google")}
-          onApple={() => handleAuthProvider("apple")}
+          onGoogleCredential={completeGoogleSignIn}
+          onGoogleUnavailable={handleGoogleUnavailable}
+          onApple={handleApple}
         />
       </>
     );
@@ -297,6 +390,11 @@ export default function App() {
         onFilterGender={setFilterGender}
         onFilterCountry={setFilterCountry}
         onStart={() => {
+          // Only ask how to continue the first time; afterwards go straight in.
+          if (authGatePassed) {
+            chat.startChat({ gender: filterGender, country: filterCountry });
+            return;
+          }
           setAuthChoiceOpen(true);
         }}
       />
@@ -479,6 +577,9 @@ export default function App() {
             onToggleTypingSound={toggleTypingSound}
             onToggleNotifSound={toggleNotifSound}
             onUnblockUser={handleUnblockUser}
+            authProvider={authProvider}
+            googleEmail={googleEmail}
+            onSignOut={handleSignOut}
           />
         )}
 
@@ -486,8 +587,9 @@ export default function App() {
           open={authChoiceOpen}
           onClose={() => setAuthChoiceOpen(false)}
           onGuestContinue={handleGuestContinue}
-          onGoogle={() => handleAuthProvider("google")}
-          onApple={() => handleAuthProvider("apple")}
+          onGoogleCredential={completeGoogleSignIn}
+          onGoogleUnavailable={handleGoogleUnavailable}
+          onApple={handleApple}
         />
       </div>
     </>

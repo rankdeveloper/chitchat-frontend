@@ -1,8 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import {
-  AVATAR_HUES,
-  DEFAULT_AVATAR_HUE,
-} from "../constants";
+import { AVATAR_HUES, DEFAULT_AVATAR_HUE } from "../constants";
 import { resolveName } from "../lib/profile";
 import {
   KEYS,
@@ -23,8 +20,8 @@ export function useProfile(
   socketRef: SocketRef,
   showToast: (msg: string) => void,
 ) {
-  const [displayName, setDisplayName] = useState(
-    () => loadOrCreateDisplayName(),
+  const [displayName, setDisplayName] = useState(() =>
+    loadOrCreateDisplayName(),
   );
   const [gender, setGender] = useState("unspecified");
   const [country, setCountry] = useState(
@@ -161,6 +158,13 @@ export function useProfile(
     return true;
   };
 
+  const adoptProviderName = useCallback((name: string) => {
+    const next = resolveName(name);
+    if (!next) return;
+    setDisplayName(next);
+    localStorage.setItem(KEYS.displayName, next);
+  }, []);
+
   return {
     displayName,
     gender,
@@ -181,5 +185,6 @@ export function useProfile(
     resetAvatar,
     changeBanner,
     commitUsername,
+    adoptProviderName,
   };
 }

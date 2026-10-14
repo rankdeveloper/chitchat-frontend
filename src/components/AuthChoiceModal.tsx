@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Logo } from "./LandingPage";
+import { GoogleSignInButton } from "./GoogleSignInButton";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onGuestContinue: () => void;
-  onGoogle: () => void;
+  /** Receives the verified Google ID token to finish sign-in. */
+  onGoogleCredential: (credential: string) => void;
+  onGoogleUnavailable: () => void;
   onApple: () => void;
 };
 
@@ -14,7 +17,8 @@ export function AuthChoiceModal({
   open,
   onClose,
   onGuestContinue,
-  onGoogle,
+  onGoogleCredential,
+  onGoogleUnavailable,
   onApple,
 }: Props) {
   const [selectedGender, setSelectedGender] = useState<"male" | "female">(
@@ -87,14 +91,10 @@ export function AuthChoiceModal({
             <span>or</span>
           </div>
 
-          <button
-            type="button"
-            className="auth-choice-social"
-            onClick={onGoogle}
-          >
-            <span className="auth-choice-social-mark google">G</span>
-            <span>Continue with Google</span>
-          </button>
+          <GoogleSignInButton
+            onCredential={onGoogleCredential}
+            onUnavailable={onGoogleUnavailable}
+          />
 
           <button
             type="button"

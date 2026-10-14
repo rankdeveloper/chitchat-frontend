@@ -1506,6 +1506,14 @@ button:disabled {
   background: rgba(255, 255, 255, 0.09);
   border-color: var(--border-hover);
 }
+.ghost-btn.danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--red);
+}
+.ghost-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.6);
+}
 .accept-btn {
   border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: 7px;
@@ -2380,6 +2388,30 @@ button:disabled {
 .auth-choice-social-mark.apple {
   background: #fff;
   color: #111827;
+}
+
+.google-signin {
+  position: relative;
+  width: 100%;
+}
+
+.google-signin-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 16px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Keep Google's own iframe filling the overlay so the whole area is clickable. */
+.google-signin-overlay > div,
+.google-signin-overlay iframe {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .auth-choice-footer,

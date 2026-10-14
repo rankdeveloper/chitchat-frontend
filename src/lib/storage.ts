@@ -12,6 +12,10 @@ export const KEYS = {
   blockedUsers: "cc_blocked_users",
   typingSound: "cc_typing_sound",
   notifSound: "cc_notif_sound",
+  googleEmail: "chitchat_google_email",
+  googleAvatar: "chitchat_google_avatar",
+  authProvider: "chitchat_auth_provider",
+  authChoiceSeen: "chitchat_auth_choice_seen",
 } as const;
 
 export function loadOrCreateUserId(): string {
@@ -21,6 +25,59 @@ export function loadOrCreateUserId(): string {
     localStorage.setItem(KEYS.userId, id);
   }
   return id;
+}
+
+/** Persist a specific identity (e.g. the Google-derived publicId). */
+export function saveUserId(id: string): void {
+  localStorage.setItem(KEYS.userId, id);
+}
+
+export function loadGoogleEmail(): string {
+  return localStorage.getItem(KEYS.googleEmail) ?? "";
+}
+
+export function loadGoogleAvatar(): string {
+  return localStorage.getItem(KEYS.googleAvatar) ?? "";
+}
+
+export function loadAuthProvider(): "guest" | "google" {
+  return localStorage.getItem(KEYS.authProvider) === "google"
+    ? "google"
+    : "guest";
+}
+
+export function saveGoogleAccount(info: {
+  email?: string;
+  avatarUrl?: string;
+}): void {
+  if (info.email !== undefined) {
+    if (info.email) localStorage.setItem(KEYS.googleEmail, info.email);
+    else localStorage.removeItem(KEYS.googleEmail);
+  }
+  if (info.avatarUrl !== undefined) {
+    if (info.avatarUrl) localStorage.setItem(KEYS.googleAvatar, info.avatarUrl);
+    else localStorage.removeItem(KEYS.googleAvatar);
+  }
+  localStorage.setItem(KEYS.authProvider, "google");
+}
+
+export function clearGoogleAccount(): void {
+  localStorage.removeItem(KEYS.googleEmail);
+  localStorage.removeItem(KEYS.googleAvatar);
+  localStorage.removeItem(KEYS.authProvider);
+}
+
+export function hasPassedAuthGate(): boolean {
+  return localStorage.getItem(KEYS.authChoiceSeen) === "1";
+}
+
+/** Remember that the user has made their auth choice. */
+export function markAuthGatePassed(): void {
+  localStorage.setItem(KEYS.authChoiceSeen, "1");
+}
+
+export function clearAuthGate(): void {
+  localStorage.removeItem(KEYS.authChoiceSeen);
 }
 
 export function loadOrCreateDisplayName(): string {
