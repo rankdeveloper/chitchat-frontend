@@ -26,6 +26,10 @@ type Args = {
 const byRecent = (a: FriendRow, b: FriendRow) =>
   (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0);
 
+const socketBaseUrl = (import.meta.env.VITE_API_URL ?? "")
+  .trim()
+  .replace(/\/$/, "");
+
 /** Socket lifecycle + random-chat, friends and DM state. */
 export function useChitchat({
   socketRef,
@@ -72,7 +76,7 @@ export function useChitchat({
   const pendingStartRef = useRef<ChatFilters | null>(null);
 
   useEffect(() => {
-    const socket = io({
+    const socket = io(socketBaseUrl || undefined, {
       path: "/socket.io",
       transports: ["websocket", "polling"],
       autoConnect: true,
@@ -90,11 +94,13 @@ export function useChitchat({
       sessionStorage.removeItem("cc_partner_id");
       sessionStorage.removeItem("cc_phase");
     };
+
     const backToSearching = () => {
       sessionStorage.removeItem("cc_phase");
       setPhase("searching");
       resetSession();
     };
+
     const applyFriends = (list: FriendRow[]) =>
       setFriends([...(list ?? [])].sort(byRecent));
 
@@ -151,8 +157,9 @@ export function useChitchat({
     });
 
     socket.on("connect_error", () => {
+      const target = socketBaseUrl || "your backend";
       setConnectionError(
-        "Cannot reach the server. Start the backend on port 3000 (and MongoDB).",
+        `Cannot reach the server at ${target}. Start the backend on port 3000 (and MongoDB) in production.`,
       );
       setPhase("disconnected");
     });
